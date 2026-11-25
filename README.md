@@ -44,6 +44,8 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 | **Vídeos grandes sin miedo** | Se envían en trozos de 8 MB. Si se bloquea la pantalla o se corta la wifi, siguen donde se quedaron. |
 | **Rápido con muchas fotos** | Tres archivos a la vez, conexiones persistentes, y velocidad y tiempo restante en pantalla. |
 | **Sin duplicados** | Reconoce lo que ya está en el ordenador y no lo vuelve a copiar. |
+| **Galería en el PC** | La ventana muestra miniaturas de lo que va llegando (generadas por el propio Windows). Un clic abre la foto o el vídeo. |
+| **Se actualiza solo** | Al abrirlo, avisa si hay una versión nueva y se actualiza con un clic: descarga, comprueba y se reinicia. |
 | **Un solo `.exe`** | Unos 11 MB, sin instalador y sin necesidad de tener Python. |
 | **Seguro por defecto** | Clave secreta en el QR, solo acepta conexiones de la red local y nunca sobrescribe archivos. |
 
@@ -58,16 +60,11 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
   </tr>
 </table>
 
-<table>
-  <tr>
-    <td valign="top" width="300"><img src="docs/screenshots/desktop-window.png" alt="Ventana de PhotoBridge en Windows" width="300"></td>
-    <td valign="top">
-      <b>La ventana del ordenador</b><br><br>
-      Muestra el QR para conectar el móvil, cuántas fotos han llegado y la carpeta de destino, que se puede abrir o cambiar con un clic.<br><br>
-      El QR se regenera solo si cambia la red o la IP del ordenador.
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/screenshots/desktop-window.png" alt="Ventana de PhotoBridge en Windows" width="640">
+</p>
+
+**La ventana del ordenador:** a la izquierda, el QR para conectar el móvil, que se regenera solo si cambia la red o la IP. A la derecha, la galería con las últimas fotos y vídeos recibidos (un clic los abre), el resumen de lo recibido y la carpeta de destino, que se puede abrir o cambiar.
 
 ## Uso
 
@@ -154,7 +151,8 @@ sequenceDiagram
 - **Sin sobrescribir:** si el nombre ya existe, se guarda como `foto (1).jpg`.
 - **Espacio en disco:** se rechaza una subida si dejaría menos de 200 MB libres.
 - **Índice local de recibidos:** para no duplicar, se guarda en `%APPDATA%\PhotoBridge\sent.json` qué id corresponde a qué archivo. Si borras el archivo, se puede volver a enviar.
-- **Nada sale de casa:** no hay telemetría, ni cuentas, ni servicios de terceros.
+- **Nada sale de casa:** las fotos solo viajan por la red local. No hay telemetría, ni cuentas, ni servicios de terceros.
+- **Actualizaciones:** al arrancar, el programa consulta la última release en `api.github.com` (solo envía `PhotoBridge/<versión>` como User-Agent). Al actualizar, comprueba el tamaño y el SHA-256 del `.exe` descargado antes de sustituir el actual. Se puede desactivar con `"check_updates": false` en `%APPDATA%\PhotoBridge\config.json`. Solo funciona si el repositorio es público.
 
 ## Estructura del proyecto
 
@@ -167,6 +165,8 @@ PhotoBridge/
 │   │   ├── server.py           Servidor HTTP: web del móvil y API de subida
 │   │   ├── storage.py          Subidas por trozos, reanudación, duplicados y guardado seguro
 │   │   ├── metadata.py         Fecha de captura desde EXIF, HEIC y MOV/MP4
+│   │   ├── thumbs.py           Miniaturas con la API del Explorador de Windows
+│   │   ├── updater.py          Comprobación, descarga e instalación de versiones nuevas
 │   │   ├── network.py          IP local y filtro de clientes
 │   │   ├── config.py           Token, puerto y carpeta
 │   │   ├── qr.py               Generación del QR
@@ -230,7 +230,7 @@ desktop\.venv\Scripts\python.exe branding\build_brand.py
    git push origin main v0.1.1
    ```
 
-3. El workflow [`release.yml`](.github/workflows/release.yml) pasa los tests, compila el `.exe` en Windows y publica la release con el ejecutable adjunto. La landing empieza a descargar la nueva versión automáticamente.
+3. El workflow [`release.yml`](.github/workflows/release.yml) pasa los tests, compila el `.exe` en Windows y publica la release con el ejecutable adjunto. La landing empieza a descargar la nueva versión automáticamente, y quien ya tenga PhotoBridge verá el aviso para actualizar la próxima vez que lo abra.
 
 ## Hoja de ruta
 

@@ -66,6 +66,7 @@ class Config:
     token: str
     port: int
     dest_dir: str
+    check_updates: bool = True
 
     @classmethod
     def load(cls) -> "Config":
@@ -79,6 +80,7 @@ class Config:
             token=data.get("token") or secrets.token_urlsafe(16),
             port=int(data.get("port") or DEFAULT_PORT),
             dest_dir=data.get("dest_dir") or str(default_destination()),
+            check_updates=bool(data.get("check_updates", True)),
         )
         if config.as_dict() != data:
             config.save()
