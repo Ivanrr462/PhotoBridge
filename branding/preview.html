@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Logo PhotoBridge</title>
+<style>
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { padding: 32px; display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
+  .light { background: #f6f7fb; color: #1c1f2a; }
+  .dark { background: #11131a; color: #eef0f6; }
+  .sizes { display: flex; align-items: end; gap: 18px; }
+  .lockup { display: flex; align-items: center; gap: 14px; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+  .lockup b { background: linear-gradient(90deg, #4353ff, #19c3fb); -webkit-background-clip: text; color: transparent; }
+</style></head>
+<body>
+  <div class="pane light">
+    <img src="logo.svg" width="240">
+    <div class="sizes"><img src="logo.svg" width="96"><img src="logo.svg" width="64"><img src="logo-small.svg" width="32"><img src="logo-small.svg" width="16"></div>
+    <img src="logo-horizontal.svg" width="330">
+  </div>
+  <div class="pane dark">
+    <img src="logo.svg" width="240">
+    <div class="sizes"><img src="logo.svg" width="96"><img src="logo.svg" width="64"><img src="logo-small.svg" width="32"><img src="logo-small.svg" width="16"></div>
+    <div class="lockup"><img src="logo.svg" width="56"><span>Photo<b>Bridge</b></span></div>
+  </div>
+</body></html>

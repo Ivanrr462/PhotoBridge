@@ -1,0 +1,84 @@
+---
+import { APP_SIZE, DOWNLOAD_URL } from "../config";
+import Icon from "./Icon.astro";
+---
+
+<section class="section final">
+  <div class="container">
+    <div class="panel" data-reveal>
+      <div class="glow" aria-hidden="true"></div>
+      <img class="mark" src="/logo.svg" alt="" width="84" height="84" />
+      <h2>¿Listo para pasar tus fotos?</h2>
+      <p>Descárgalo gratis, ábrelo y en un minuto tendrás tus fotos en el ordenador.</p>
+      <a class="btn btn-white" href={DOWNLOAD_URL}>
+        <Icon name="download" />
+        Descargar para Windows
+      </a>
+      <small>Gratis · {APP_SIZE} · Windows 10 y 11</small>
+    </div>
+  </div>
+</section>
+
+<style>
+  .final {
+    padding-top: clamp(72px, 10vw, 120px);
+  }
+  .panel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: clamp(48px, 8vw, 88px) 24px;
+    border-radius: 36px;
+    background: linear-gradient(135deg, #3442f0 0%, #5b6cff 50%, #19b5fb 100%);
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 40px 80px -30px rgb(67 83 255 / 0.6);
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 15% 10%, rgb(255 255 255 / 0.28), transparent 40%),
+      radial-gradient(circle at 90% 100%, rgb(255 255 255 / 0.18), transparent 45%);
+  }
+  .glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  }
+  .mark {
+    border-radius: 22px;
+    box-shadow: 0 20px 40px -12px rgb(10 14 70 / 0.5), 0 0 0 6px rgb(255 255 255 / 0.18);
+  }
+  h2 {
+    margin-top: 28px;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+  }
+  p {
+    margin-top: 14px;
+    max-width: 520px;
+    font-size: 1.15rem;
+    opacity: 0.88;
+  }
+  .btn-white {
+    margin-top: 32px;
+    color: #2b37d6;
+    background: #fff;
+    box-shadow: 0 16px 32px -12px rgb(10 14 70 / 0.55);
+  }
+  small {
+    margin-top: 14px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+</style>

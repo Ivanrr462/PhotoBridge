@@ -1,0 +1,76 @@
+---
+import { APP_VERSION, DOWNLOAD_URL } from "../config";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="about">
+      <a href="/" class="brand">
+        <img src="/logo.svg" alt="" width="32" height="32" />
+        <span>Photo<span class="gradient-text">Bridge</span></span>
+      </a>
+      <p>Tus fotos, del móvil al ordenador, sin salir de casa.</p>
+    </div>
+    <nav aria-label="Pie de página">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#ventajas">Ventajas</a>
+      <a href="#ayuda">Ayuda</a>
+      <a href={DOWNLOAD_URL}>Descargar</a>
+    </nav>
+  </div>
+  <div class="container legal">
+    <span>© {year} PhotoBridge</span>
+    <span>v{APP_VERSION}</span>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 48px 0 32px;
+  }
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 32px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 750 1.1rem/1 var(--font-display);
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .about p {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    align-items: center;
+  }
+  nav a {
+    color: var(--muted);
+    font-size: 15px;
+    text-decoration: none;
+  }
+  nav a:hover {
+    color: var(--text);
+  }
+  .legal {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--faint);
+    font-size: 14px;
+  }
+</style>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Versión simplificada para tamaños pequeños (favicon, 16–32 px) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4353ff"/>
+      <stop offset="0.55" stop-color="#5b6cff"/>
+      <stop offset="1" stop-color="#19c3fb"/>
+    </linearGradient>
+    <linearGradient id="pic" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fa0ff"/>
+      <stop offset="1" stop-color="#6fd8ff"/>
+    </linearGradient>
+    <clipPath id="picClip"><rect x="-13" y="-13" width="26" height="26" rx="4"/></clipPath>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <g transform="translate(32 32) rotate(7)">
+    <rect x="-19" y="-19" width="38" height="38" rx="9" fill="#ffffff"/>
+    <g clip-path="url(#picClip)">
+      <rect x="-13" y="-13" width="26" height="26" fill="url(#pic)"/>
+      <circle cx="6" cy="-6" r="3.5" fill="#ffffff"/>
+      <path d="M-3 13 L6 2 L13 8 L13 13 Z" fill="#5b6cff"/>
+      <path d="M-13 13 L-13 7 L-5 -1 L5 9 L8 13 Z" fill="#3443e8"/>
+    </g>
+  </g>
+</svg>

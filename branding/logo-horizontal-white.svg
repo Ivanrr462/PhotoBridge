@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320">
+  <defs>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4353ff"/>
+      <stop offset="1" stop-color="#19c3fb"/>
+    </linearGradient>
+  </defs>
+  <svg x="20" y="20" width="280" height="280" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4353ff"/>
+      <stop offset="0.55" stop-color="#5b6cff"/>
+      <stop offset="1" stop-color="#19c3fb"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.25" cy="0.1" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pic" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fa0ff"/>
+      <stop offset="1" stop-color="#6fd8ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#14185c" flood-opacity="0.32"/>
+    </filter>
+    <clipPath id="picClip">
+      <rect x="-84" y="-84" width="168" height="168" rx="26"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#shine)"/>
+
+  <!-- Estela: la foto "viaja" de izquierda a derecha -->
+  <g stroke="#ffffff" stroke-linecap="round" stroke-width="14" opacity="0.55">
+    <path d="M70 214h46"/>
+    <path d="M56 262h52"/>
+    <path d="M78 310h34"/>
+  </g>
+
+  <!-- Foto de atrás -->
+  <g transform="translate(214 270) rotate(-12)">
+    <rect x="-100" y="-100" width="200" height="200" rx="44" fill="#ffffff" opacity="0.35"/>
+  </g>
+
+  <!-- Foto delantera -->
+  <g transform="translate(300 250) rotate(7)" filter="url(#shadow)">
+    <rect x="-116" y="-116" width="232" height="232" rx="52" fill="#ffffff"/>
+    <g clip-path="url(#picClip)">
+      <rect x="-84" y="-84" width="168" height="168" fill="url(#pic)"/>
+      <circle cx="38" cy="-36" r="21" fill="#ffffff"/>
+      <path d="M-20 84 L40 14 L84 52 L84 84 Z" fill="#5b6cff"/>
+      <path d="M-84 84 L-84 46 L-30 -6 L30 60 L48 84 Z" fill="#3443e8"/>
+    </g>
+  </g>
+</svg>
+  <text x="340" y="205" font-family="Segoe UI, Inter, system-ui, sans-serif" font-size="138" font-weight="700" letter-spacing="-3"><tspan fill="#ffffff">Photo</tspan><tspan fill="url(#word)">Bridge</tspan></text>
+</svg>

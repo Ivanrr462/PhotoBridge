@@ -1,0 +1,43 @@
+---
+// QR decorativo (no codifica nada): patrones de posición reales + módulos pseudoaleatorios.
+interface Props {
+  size?: number;
+  class?: string;
+}
+const { size = 120, class: className } = Astro.props;
+const N = 25;
+
+let seed = 7;
+const rand = () => {
+  seed = (seed * 1103515245 + 12345) % 2147483648;
+  return seed / 2147483648;
+};
+
+const inFinder = (x: number, y: number) =>
+  (x < 8 && y < 8) || (x >= N - 8 && y < 8) || (x < 8 && y >= N - 8);
+
+const cells: { x: number; y: number }[] = [];
+for (let y = 0; y < N; y++) {
+  for (let x = 0; x < N; x++) {
+    if (!inFinder(x, y) && rand() > 0.52) cells.push({ x, y });
+  }
+}
+const finders = [
+  [0, 0],
+  [N - 7, 0],
+  [0, N - 7],
+];
+---
+
+<svg class={className} width={size} height={size} viewBox={`-1 -1 ${N + 2} ${N + 2}`} aria-hidden="true">
+  <rect x="-1" y="-1" width={N + 2} height={N + 2} rx="2" fill="#fff"></rect>
+  {cells.map((c) => <rect x={c.x} y={c.y} width="1" height="1" rx="0.25" fill="#0f1222" />)}
+  {
+    finders.map(([x, y]) => (
+      <g>
+        <rect x={x + 0.5} y={y + 0.5} width="6" height="6" rx="1.6" fill="none" stroke="#0f1222" stroke-width="1" />
+        <rect x={x + 2} y={y + 2} width="3" height="3" rx="0.8" fill="#4353ff" />
+      </g>
+    ))
+  }
+</svg>

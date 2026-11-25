@@ -1,0 +1,175 @@
+﻿---
+import { APP_SIZE, DOWNLOAD_URL } from "../config";
+import DeviceShowcase from "./DeviceShowcase.astro";
+import Icon from "./Icon.astro";
+
+const trust = ["Gratis", "Sin cuenta", "Android y iPhone", "Windows 10 y 11"];
+---
+
+<section class="hero">
+  <div class="backdrop" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="grid-lines"></div>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="copy">
+      <span class="eyebrow rise">
+        <Icon name="lock" size={14} strokeWidth={2.4} />
+        100 % local · tus fotos no salen de casa
+      </span>
+      <h1 class="rise" style="--delay: 60ms">
+        Tus fotos, del móvil <span class="gradient-text">al ordenador</span> en segundos
+      </h1>
+      <p class="lead rise" style="--delay: 120ms">
+        Escanea un código QR, elige las fotos y listo. Sin cables, sin cuentas y sin subir nada a internet: todo
+        viaja por la wifi de tu casa.
+      </p>
+      <div class="cta rise" style="--delay: 180ms">
+        <a class="btn btn-primary" href={DOWNLOAD_URL}>
+          <Icon name="download" />
+          Descargar para Windows
+        </a>
+        <a class="btn btn-secondary" href="#como-funciona">
+          Cómo funciona
+          <Icon name="arrowRight" />
+        </a>
+      </div>
+      <ul class="trust rise" style="--delay: 240ms">
+        {
+          trust.map((item) => (
+            <li>
+              <Icon name="check" size={16} strokeWidth={2.6} />
+              {item}
+            </li>
+          ))
+        }
+      </ul>
+      <p class="size rise" style="--delay: 260ms">Descarga de {APP_SIZE}. No necesita instalación.</p>
+    </div>
+
+    <div class="visual rise" style="--delay: 200ms">
+      <DeviceShowcase />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    padding: clamp(32px, 6vw, 72px) 0 clamp(64px, 9vw, 120px);
+  }
+
+  .backdrop {
+    position: absolute;
+    inset: -72px 0 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.55;
+  }
+  .blob-1 {
+    width: 620px;
+    height: 620px;
+    top: -220px;
+    right: -120px;
+    background: radial-gradient(circle, #5b6cff 0%, transparent 70%);
+  }
+  .blob-2 {
+    width: 520px;
+    height: 520px;
+    top: 160px;
+    right: 22%;
+    background: radial-gradient(circle, #19c3fb 0%, transparent 70%);
+    opacity: 0.35;
+  }
+  .grid-lines {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+  }
+
+  .hero-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: clamp(40px, 5vw, 72px);
+    align-items: center;
+  }
+
+  h1 {
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    letter-spacing: -0.04em;
+  }
+  .lead {
+    margin-top: 24px;
+    max-width: 540px;
+    font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+    color: var(--muted);
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+  }
+  .trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .trust li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .trust svg {
+    color: var(--ok);
+  }
+  .size {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--faint);
+  }
+
+  @media (max-width: 960px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+    }
+    .copy {
+      text-align: center;
+    }
+    .lead {
+      margin-inline: auto;
+    }
+    .cta,
+    .trust {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cta .btn {
+      flex: 1 1 100%;
+    }
+    .visual {
+      margin-top: 24px;
+    }
+  }
+</style>

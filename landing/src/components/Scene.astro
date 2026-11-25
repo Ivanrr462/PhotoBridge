@@ -1,0 +1,44 @@
+---
+// Miniatura que imita una foto (paisaje) dibujada en SVG: pesa casi nada y siempre se ve nítida.
+interface Props {
+  variant?: number;
+  class?: string;
+}
+
+const palettes = [
+  { sky: ["#ffb38a", "#ff7eb3"], sun: "#fff3c4", back: "#9a4d9e", front: "#5a2a73" }, // atardecer
+  { sky: ["#8fd3ff", "#e1f5ff"], sun: "#ffffff", back: "#6fd39a", front: "#2f9e6b" }, // prado
+  { sky: ["#1e2a5a", "#4b4588"], sun: "#f5f3c1", back: "#34397a", front: "#171a3d" }, // noche
+  { sky: ["#ffd27a", "#fff0c7"], sun: "#ff8a3d", back: "#e6a862", front: "#b7713b" }, // desierto
+  { sky: ["#a9c8ff", "#eef3ff"], sun: "#ffffff", back: "#aab6d6", front: "#5f6f96" }, // montaña
+  { sky: ["#6ee7f9", "#d3f8ff"], sun: "#fff7d6", back: "#26b0c4", front: "#f2d8a7" }, // playa
+  { sky: ["#ff9a8b", "#ffd3a5"], sun: "#fff1e0", back: "#e2725b", front: "#8c3b4a" }, // otoño
+  { sky: ["#c2b5ff", "#f1edff"], sun: "#ffffff", back: "#8f7cf0", front: "#5b46c9" }, // lavanda
+] as const;
+
+const { variant = 0, class: className } = Astro.props;
+const p = palettes[variant % palettes.length];
+const id = `sky-${variant}-${Math.random().toString(36).slice(2, 8)}`;
+const sunX = [70, 30, 74, 64, 28, 76, 34, 68][variant % 8];
+---
+
+<svg class:list={["scene", className]} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color={p.sky[0]}></stop>
+      <stop offset="1" stop-color={p.sky[1]}></stop>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill={`url(#${id})`}></rect>
+  <circle cx={sunX} cy="30" r="10" fill={p.sun}></circle>
+  <path d="M0 72 L24 48 L42 64 L64 40 L100 70 L100 100 L0 100Z" fill={p.back}></path>
+  <path d="M0 86 Q28 68 52 82 T100 78 L100 100 L0 100Z" fill={p.front}></path>
+</svg>
+
+<style>
+  .scene {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>

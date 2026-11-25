@@ -1,0 +1,89 @@
+---
+import { DOWNLOAD_URL } from "../config";
+import Icon from "./Icon.astro";
+---
+
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="/" class="brand" aria-label="PhotoBridge, inicio">
+      <img src="/logo.svg" alt="" width="36" height="36" />
+      <span>Photo<span class="gradient-text">Bridge</span></span>
+    </a>
+    <nav class="links" aria-label="Secciones">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#ventajas">Ventajas</a>
+      <a href="#ayuda">Ayuda</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href={DOWNLOAD_URL}>
+      <Icon name="download" />
+      <span>Descargar</span>
+    </a>
+  </div>
+</header>
+
+<script>
+  const nav = document.getElementById("nav");
+  const update = () => nav?.classList.toggle("scrolled", window.scrollY > 8);
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+</script>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+  .nav.scrolled {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: saturate(1.6) blur(16px);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    border-bottom-color: var(--border);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 72px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 750 1.2rem/1 var(--font-display);
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .brand img {
+    border-radius: 10px;
+  }
+  .links {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .links a {
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 15px;
+    text-decoration: none;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+  .links a:hover {
+    color: var(--text);
+    background: var(--bg-soft);
+  }
+
+  @media (max-width: 760px) {
+    .links {
+      display: none;
+    }
+    .nav-inner > .btn {
+      margin-left: auto;
+    }
+  }
+</style>

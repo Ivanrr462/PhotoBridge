@@ -1,0 +1,162 @@
+---
+import Icon from "./Icon.astro";
+
+const faqs = [
+  {
+    q: "Al abrirlo, Windows dice «Windows protegió su PC»",
+    a: "Es normal con programas nuevos que todavía no son muy conocidos. Pulsa <strong>«Más información»</strong> y después <strong>«Ejecutar de todas formas»</strong>. Solo pasa la primera vez.",
+  },
+  {
+    q: "Aparece un aviso del Firewall de Windows",
+    a: "PhotoBridge necesita permiso para que el móvil pueda conectarse. Marca <strong>«Redes privadas»</strong> y pulsa <strong>«Permitir acceso»</strong>.",
+  },
+  {
+    q: "Escaneo el QR pero la página no carga",
+    a: `Casi siempre es cosa de la red. Comprueba esto:
+      <ul>
+        <li>El móvil está conectado a la <strong>misma wifi</strong> que el ordenador, no con datos móviles (4G/5G).</li>
+        <li>No estás en una red de <strong>invitados</strong>: suelen impedir que los dispositivos se vean entre sí.</li>
+        <li>En Windows la red tiene que ser <strong>privada</strong>: ve a <em>Configuración › Red e Internet › Wi-Fi</em> (o Ethernet), entra en tu red y elige <strong>«Red privada»</strong>.</li>
+        <li>PhotoBridge sigue abierto en el ordenador.</li>
+      </ul>`,
+  },
+  {
+    q: "¿Dónde se guardan las fotos?",
+    a: "En la carpeta <strong>Imágenes › PhotoBridge</strong>. Puedes abrirla o elegir otra con los botones de la ventana de PhotoBridge.",
+  },
+  {
+    q: "¿Puedo bloquear el móvil mientras se envían?",
+    a: "Mejor no. Deja la página abierta y la pantalla encendida hasta que veas que ha terminado. Si alguna foto falla, podrás reintentar solo esas.",
+  },
+  {
+    q: "¿Funciona si no estoy en casa?",
+    a: "No, y es a propósito: el móvil y el ordenador tienen que estar en la misma red. Así tus fotos nunca viajan por internet.",
+  },
+  {
+    q: "¿Alguien de mi wifi podría enviarme fotos?",
+    a: "No. El código QR incluye una clave secreta única de tu ordenador y PhotoBridge rechaza cualquier envío que no la tenga.",
+  },
+];
+---
+
+<section id="ayuda" class="section faq-section">
+  <div class="container faq-layout">
+    <div class="faq-head" data-reveal>
+      <span class="eyebrow">Ayuda</span>
+      <h2>Preguntas frecuentes</h2>
+      <p>Las dudas más habituales la primera vez que usas PhotoBridge.</p>
+    </div>
+
+    <div class="faq" data-reveal style="--delay: 100ms">
+      {
+        faqs.map((item, i) => (
+          <details open={i === 2}>
+            <summary>
+              {item.q}
+              <span class="toggle">
+                <Icon name="plus" size={18} strokeWidth={2.4} />
+              </span>
+            </summary>
+            <div class="answer" set:html={item.a} />
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq-section {
+    background: var(--bg-soft);
+    border-block: 1px solid var(--border);
+  }
+  .faq-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+    gap: clamp(32px, 6vw, 80px);
+    align-items: start;
+  }
+  .faq-head {
+    position: sticky;
+    top: 104px;
+  }
+  .faq-head h2 {
+    font-size: clamp(2rem, 4.4vw, 3rem);
+  }
+  .faq-head p {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+  .faq {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  details {
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  details[open] {
+    border-color: rgb(67 83 255 / 0.3);
+    box-shadow: var(--shadow-md);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    cursor: pointer;
+    list-style: none;
+    font: 650 1.05rem/1.35 var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  .toggle {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-soft);
+    color: var(--brand-1);
+    transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+  }
+  details[open] .toggle {
+    transform: rotate(45deg);
+    background: var(--grad);
+    color: #fff;
+  }
+  .answer {
+    padding: 0 22px 22px;
+    color: var(--muted);
+  }
+  .answer :global(ul) {
+    margin: 10px 0 0;
+    padding-left: 20px;
+  }
+  .answer :global(li) {
+    margin-bottom: 8px;
+  }
+  .answer :global(strong) {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @media (max-width: 860px) {
+    .faq-layout {
+      grid-template-columns: 1fr;
+    }
+    .faq-head {
+      position: static;
+      text-align: center;
+    }
+  }
+</style>

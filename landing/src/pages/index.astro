@@ -1,0 +1,27 @@
+---
+import Compare from "../components/Compare.astro";
+import Faq from "../components/Faq.astro";
+import Features from "../components/Features.astro";
+import FinalCta from "../components/FinalCta.astro";
+import Footer from "../components/Footer.astro";
+import Hero from "../components/Hero.astro";
+import Nav from "../components/Nav.astro";
+import Steps from "../components/Steps.astro";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="PhotoBridge · Pasa las fotos del móvil al ordenador"
+  description="Pasa las fotos y vídeos del móvil al ordenador por tu wifi. Sin cables, sin cuentas y sin subir nada a internet."
+>
+  <Nav />
+  <main>
+    <Hero />
+    <Steps />
+    <Features />
+    <Compare />
+    <Faq />
+    <FinalCta />
+  </main>
+  <Footer />
+</Layout>
