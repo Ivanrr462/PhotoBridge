@@ -6,4 +6,4 @@ export const REPO_URL = "https://github.com/Ivanrr462/PhotoBridge";
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest/download/PhotoBridge.exe`;
 
 export const APP_SIZE = "11 MB";
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.2.0";

@@ -1,18 +1,38 @@
-"""Servidor HTTP local que sirve la web del móvil y recibe los archivos."""
+"""Servidor HTTP local que sirve la web del móvil y recibe los archivos.
+
+Protocolo de subida (reanudable, por trozos):
+
+1. ``POST /api/uploads`` con ``{"id", "name", "size", "lastModified"}`` abre o retoma el
+   envío y responde con ``offset`` (bytes ya guardados). Si el archivo ya se había recibido
+   antes responde ``done: true, skipped: true`` y no hace falta enviarlo.
+2. ``PUT /api/uploads/<id>?offset=N`` con un trozo del archivo como cuerpo. Responde con el
+   nuevo ``offset``; en el último trozo, además, ``done: true`` y ``savedAs``.
+   Si ``N`` no coincide con lo que hay guardado responde ``409`` con el ``offset`` correcto.
+"""
 
 from __future__ import annotations
 
 import hmac
 import json
+import re
+import socket
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Callable
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from . import __version__
 from .network import computer_name, is_allowed_client
-from .storage import IncompleteUpload, NotEnoughSpace, Storage
+from .storage import (
+    IncompleteUpload,
+    InvalidUpload,
+    NotEnoughSpace,
+    OffsetMismatch,
+    Storage,
+    UnknownUpload,
+    UploadState,
+)
 
 WEB_DIR = Path(__file__).parent / "web"
 STATIC_FILES = {
@@ -22,6 +42,9 @@ STATIC_FILES = {
     "favicon.svg": "image/svg+xml",
     "apple-touch-icon.png": "image/png",
 }
+UPLOAD_PATH = re.compile(r"^/api/uploads/([0-9a-f]{16,64})$")
+MAX_JSON_BODY = 16 * 1024
+SOCKET_BUFFER = 4 * 1024 * 1024
 
 INVALID_LINK_PAGE = """<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
@@ -37,6 +60,7 @@ EventCallback = Callable[[str, dict], None]
 
 class PhotoBridgeServer(ThreadingHTTPServer):
     daemon_threads = True
+    request_queue_size = 32
 
     def __init__(self, port: int, token: str, storage: Storage, on_event: EventCallback | None = None):
         self.token = token
@@ -61,7 +85,16 @@ class PhotoBridgeServer(ThreadingHTTPServer):
 class RequestHandler(BaseHTTPRequestHandler):
     server: PhotoBridgeServer
     server_version = f"PhotoBridge/{__version__}"
+    protocol_version = "HTTP/1.1"  # conexiones persistentes: menos latencia entre trozos
     timeout = 60  # si el móvil se queda colgado (pantalla bloqueada) cortamos
+    rbufsize = 1024 * 1024
+
+    def setup(self) -> None:
+        try:
+            self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, SOCKET_BUFFER)
+        except OSError:
+            pass
+        super().setup()
 
     # -- utilidades -------------------------------------------------------
 
@@ -74,6 +107,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if self.close_connection:
+            self.send_header("Connection", "close")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
@@ -87,8 +122,35 @@ class RequestHandler(BaseHTTPRequestHandler):
     def _client_allowed(self) -> bool:
         if is_allowed_client(self.client_address[0]):
             return True
+        self.close_connection = True
         self._json(403, {"error": "forbidden"})
         return False
+
+    def _authorized(self) -> bool:
+        if self._token_ok(self.headers.get("X-Token")):
+            return True
+        self._discard_body()
+        self._json(401, {"error": "token"})
+        return False
+
+    def _content_length(self) -> int | None:
+        try:
+            return int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            return None
+
+    def _discard_body(self) -> None:
+        """No leemos cuerpos que rechazamos: cerramos la conexión para no desincronizarla."""
+        if self._content_length():
+            self.close_connection = True
+
+    def _state_payload(self, state: UploadState) -> dict:
+        payload: dict = {"offset": state.offset, "done": state.done}
+        if state.saved is not None:
+            payload["savedAs"] = state.saved.name
+        if state.skipped:
+            payload["skipped"] = True
+        return payload
 
     # -- rutas ------------------------------------------------------------
 
@@ -106,10 +168,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             name = url.path[8:]
             self._send(200, (WEB_DIR / name).read_bytes(), STATIC_FILES[name])
         elif url.path == "/api/info":
-            if not self._token_ok(self.headers.get("X-Token")):
-                self._json(401, {"error": "token"})
-                return
-            self._json(200, {"computer": computer_name(), "version": __version__})
+            if self._authorized():
+                self._json(200, {"computer": computer_name(), "version": __version__})
         else:
             self._json(404, {"error": "not_found"})
 
@@ -118,42 +178,84 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         if not self._client_allowed():
             return
-        if urlsplit(self.path).path != "/api/upload":
+        if urlsplit(self.path).path != "/api/uploads":
+            self._discard_body()
             self._json(404, {"error": "not_found"})
             return
-        if not self._token_ok(self.headers.get("X-Token")):
-            self._json(401, {"error": "token"})
-            return
-        try:
-            length = int(self.headers.get("Content-Length", ""))
-        except ValueError:
-            self._json(411, {"error": "length_required"})
-            return
-        if length <= 0:
-            self._json(400, {"error": "empty"})
+        if not self._authorized():
             return
 
-        raw_name = unquote(self.headers.get("X-File-Name", ""))
-        try:
-            last_modified = int(self.headers.get("X-Last-Modified", "0"))
-        except ValueError:
-            last_modified = 0
-
-        try:
-            saved = self.server.storage.save_stream(self.rfile, length, raw_name, last_modified)
-        except NotEnoughSpace:
+        length = self._content_length()
+        if length is None or not 0 < length <= MAX_JSON_BODY:
             self.close_connection = True
+            self._json(400, {"error": "bad_request"})
+            return
+        try:
+            body = json.loads(self.rfile.read(length))
+            state = self.server.storage.start(
+                str(body["id"]), str(body.get("name", "")), int(body["size"]), int(body.get("lastModified") or 0)
+            )
+        except (ValueError, KeyError, TypeError, InvalidUpload):
+            self._json(400, {"error": "bad_request"})
+            return
+        except NotEnoughSpace:
             self._json(507, {"error": "no_space"})
             self.server.on_event("error", {"message": "No queda espacio en el disco"})
             return
+        except OSError as exc:
+            self._json(500, {"error": "write_failed"})
+            self.server.on_event("error", {"message": f"No se pudo preparar el archivo: {exc}"})
+            return
+
+        if state.skipped:
+            self.server.on_event("skipped", {"path": state.saved})
+        self._json(200, self._state_payload(state))
+
+    def do_PUT(self) -> None:  # noqa: N802
+        if not self._client_allowed():
+            return
+        url = urlsplit(self.path)
+        match = UPLOAD_PATH.match(url.path)
+        if not match:
+            self._discard_body()
+            self._json(404, {"error": "not_found"})
+            return
+        if not self._authorized():
+            return
+
+        length = self._content_length()
+        try:
+            offset = int(parse_qs(url.query)["offset"][0])
+        except (KeyError, ValueError, IndexError):
+            offset = -1
+        if length is None or length <= 0 or offset < 0:
+            self.close_connection = True
+            self._json(400, {"error": "bad_request"})
+            return
+
+        try:
+            state = self.server.storage.append(match.group(1), offset, self.rfile, length)
+        except OffsetMismatch as exc:
+            self.close_connection = True
+            self._json(409, {"error": "offset", "offset": exc.offset})
+            return
+        except UnknownUpload:
+            self.close_connection = True
+            self._json(404, {"error": "unknown_upload"})
+            return
+        except InvalidUpload:
+            self.close_connection = True
+            self._json(400, {"error": "bad_request"})
+            return
         except (IncompleteUpload, ConnectionError, TimeoutError):
             self.close_connection = True
-            return  # el móvil se desconectó; el archivo parcial ya se ha borrado
+            return  # el móvil se desconectó; lo recibido se conserva y se retomará
         except OSError as exc:
             self.close_connection = True
             self._json(500, {"error": "write_failed"})
             self.server.on_event("error", {"message": f"No se pudo guardar el archivo: {exc}"})
             return
 
-        self._json(200, {"savedAs": saved.name})
-        self.server.on_event("received", {"path": saved, "size": length})
+        if state.saved is not None:
+            self.server.on_event("received", {"path": state.saved, "size": state.offset})
+        self._json(200, self._state_payload(state))

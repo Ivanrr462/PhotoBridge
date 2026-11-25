@@ -1,9 +1,27 @@
 import io
+import os
 import tempfile
+import time
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
-from photobridge.storage import IncompleteUpload, Storage, sanitize_filename
+from photobridge.storage import (
+    PART_SUFFIX,
+    STALE_PART_SECONDS,
+    IncompleteUpload,
+    InvalidUpload,
+    OffsetMismatch,
+    Storage,
+    UnknownUpload,
+    is_generic_name,
+    sanitize_filename,
+)
+
+from .media_samples import jpeg_with_exif
+
+ID_A = "a" * 32
+ID_B = "b" * 32
 
 
 class SanitizeFilenameTest(unittest.TestCase):
@@ -29,33 +47,111 @@ class SanitizeFilenameTest(unittest.TestCase):
         self.assertLessEqual(len(result), 150)
         self.assertTrue(result.endswith(".jpeg"))
 
+    def test_generic_names(self):
+        for name in ("image.jpg", "IMAGE.JPEG", "video.mov", "foto", "4F3A9C1E-2B7D-4E61-9A0B-7C2D1E3F4A5B.heic"):
+            self.assertTrue(is_generic_name(name), name)
+        for name in ("IMG_1234.HEIC", "Vacaciones.jpg", "cafe.mp4"):
+            self.assertFalse(is_generic_name(name), name)
+
 
 class StorageTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.dest = Path(self.tmp.name) / "fotos"
-        self.storage = Storage(self.dest)
+        self.index = Path(self.tmp.name) / "sent.json"
+        self.storage = Storage(self.dest, index_path=self.index)
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_saves_file_and_preserves_date(self):
-        data = b"x" * 3_000_000
-        path = self.storage.save_stream(io.BytesIO(data), len(data), "foto.jpg", 1_600_000_000_000)
-        self.assertEqual(path.read_bytes(), data)
-        self.assertEqual(int(path.stat().st_mtime), 1_600_000_000)
+    def send(self, upload_id, name, data, chunk=1000, last_modified=0, storage=None):
+        storage = storage or self.storage
+        state = storage.start(upload_id, name, len(data), last_modified)
+        while not state.done:
+            piece = data[state.offset : state.offset + chunk]
+            state = storage.append(upload_id, state.offset, io.BytesIO(piece), len(piece))
+        return state
 
-    def test_does_not_overwrite_existing_files(self):
-        first = self.storage.save_stream(io.BytesIO(b"1"), 1, "foto.jpg")
-        second = self.storage.save_stream(io.BytesIO(b"2"), 1, "foto.jpg")
-        self.assertEqual(first.name, "foto.jpg")
-        self.assertEqual(second.name, "foto (1).jpg")
-        self.assertEqual(first.read_bytes(), b"1")
+    def visible_files(self):
+        return sorted(p.name for p in self.dest.iterdir() if not p.name.endswith(PART_SUFFIX))
 
-    def test_incomplete_upload_leaves_no_files(self):
+    def test_upload_in_chunks(self):
+        data = os.urandom(3_500_000)
+        state = self.send(ID_A, "video.MOV", data, chunk=1_000_000, last_modified=1_600_000_000_000)
+        self.assertEqual(state.saved.read_bytes(), data)
+        self.assertEqual(state.offset, len(data))
+        # video.MOV es un nombre genérico: se renombra con la fecha
+        self.assertTrue(state.saved.name.startswith("IMG_2020"), state.saved.name)
+        self.assertEqual(int(state.saved.stat().st_mtime), 1_600_000_000)
+        self.assertEqual(self.visible_files(), [state.saved.name])
+
+    def test_capture_date_from_exif_wins_over_browser_date(self):
+        jpeg = jpeg_with_exif()
+        state = self.send(ID_A, "IMG_0001.jpg", jpeg, last_modified=int(time.time() * 1000))
+        expected = datetime(2024, 7, 14, 16, 30, tzinfo=timezone.utc).timestamp()
+        self.assertEqual(state.saved.name, "IMG_0001.jpg")
+        self.assertEqual(state.saved.stat().st_mtime, expected)
+
+    def test_resume_after_interruption(self):
+        data = os.urandom(10_000)
+        self.storage.start(ID_A, "clip.mp4", len(data))
+        self.storage.append(ID_A, 0, io.BytesIO(data[:4000]), 4000)
+        # Corte a mitad del segundo trozo: solo llegan 1500 de 4000 bytes
         with self.assertRaises(IncompleteUpload):
-            self.storage.save_stream(io.BytesIO(b"abc"), 10, "foto.jpg")
-        self.assertEqual(list(self.dest.iterdir()), [])
+            self.storage.append(ID_A, 4000, io.BytesIO(data[4000:5500]), 4000)
+        # El móvil vuelve, pregunta y sigue desde donde se quedó (incluso con otro Storage)
+        fresh = Storage(self.dest, index_path=self.index)
+        state = fresh.start(ID_A, "clip.mp4", len(data))
+        self.assertEqual(state.offset, 5500)
+        state = fresh.append(ID_A, 5500, io.BytesIO(data[5500:]), len(data) - 5500)
+        self.assertTrue(state.done)
+        self.assertEqual(state.saved.read_bytes(), data)
+
+    def test_wrong_offset_reports_the_real_one(self):
+        self.storage.start(ID_A, "a.jpg", 100)
+        self.storage.append(ID_A, 0, io.BytesIO(b"x" * 40), 40)
+        with self.assertRaises(OffsetMismatch) as ctx:
+            self.storage.append(ID_A, 0, io.BytesIO(b"x" * 40), 40)
+        self.assertEqual(ctx.exception.offset, 40)
+
+    def test_invalid_requests(self):
+        with self.assertRaises(InvalidUpload):
+            self.storage.start("../../etc", "a.jpg", 10)
+        with self.assertRaises(InvalidUpload):
+            self.storage.start(ID_A, "a.jpg", 0)
+        with self.assertRaises(UnknownUpload):
+            self.storage.append(ID_B, 0, io.BytesIO(b"x"), 1)
+        self.storage.start(ID_A, "a.jpg", 10)
+        with self.assertRaises(InvalidUpload):
+            self.storage.append(ID_A, 0, io.BytesIO(b"x" * 20), 20)
+
+    def test_already_sent_files_are_skipped(self):
+        first = self.send(ID_A, "IMG_1.jpg", b"contenido")
+        again = Storage(self.dest, index_path=self.index).start(ID_A, "IMG_1.jpg", len(b"contenido"))
+        self.assertTrue(again.skipped)
+        self.assertEqual(again.saved, first.saved)
+        self.assertEqual(self.visible_files(), ["IMG_1.jpg"])
+
+    def test_skipped_only_if_the_file_is_still_there(self):
+        first = self.send(ID_A, "IMG_1.jpg", b"contenido")
+        first.saved.unlink()
+        state = self.storage.start(ID_A, "IMG_1.jpg", len(b"contenido"))
+        self.assertFalse(state.skipped)
+        self.assertEqual(state.offset, 0)
+
+    def test_same_name_different_content_keeps_both(self):
+        self.send(ID_A, "IMG_1.jpg", b"uno")
+        self.send(ID_B, "IMG_1.jpg", b"dos")
+        self.assertEqual(self.visible_files(), ["IMG_1 (1).jpg", "IMG_1.jpg"])
+
+    def test_stale_parts_are_cleaned(self):
+        self.dest.mkdir(parents=True)
+        old = self.dest / f".{ID_A}{PART_SUFFIX}"
+        old.write_bytes(b"x")
+        past = time.time() - STALE_PART_SECONDS - 60
+        os.utime(old, (past, past))
+        Storage(self.dest)
+        self.assertFalse(old.exists())
 
 
 if __name__ == "__main__":

@@ -29,10 +29,37 @@
       <h1>Pasa tus fotos al ordenador</h1>
       <p class="lead">Elige las fotos y vídeos que quieras. Puedes seleccionar muchas a la vez.</p>
       <label class="btn btn-primary btn-big">
-        <input id="file-input" type="file" accept="image/*,video/*" multiple hidden>
+        <input id="file-input" type="file" accept="image/*,video/*,image/heic,image/heif" multiple hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         Elegir fotos
       </label>
+      <label class="btn btn-ghost">
+        <input id="file-input-files" type="file" multiple hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        Elegir desde Archivos
+      </label>
+
+      <details id="ios-tips" class="tips" hidden>
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          iPhone: Live Photos y vídeos en calidad original
+        </summary>
+        <div class="tips-body">
+          <h3>Live Photos</h3>
+          <p>Desde el navegador, el iPhone solo entrega la <b>foto</b> de una Live Photo, no su movimiento. Para conservarlo también:</p>
+          <ol>
+            <li>En <b>Fotos</b>, abre la Live Photo.</li>
+            <li>Toca <b>Compartir</b> → <b>Guardar como vídeo</b>.</li>
+            <li>Envía aquí ese vídeo junto con la foto.</li>
+          </ol>
+          <h3>Vídeos sin comprimir</h3>
+          <p>Al elegir vídeos desde la fototeca, el iPhone puede reducir su calidad. Para enviarlos tal cual:</p>
+          <ol>
+            <li>En <b>Fotos</b>, selecciónalos y toca <b>Compartir</b> → <b>Guardar en Archivos</b>.</li>
+            <li>Aquí, pulsa <b>Elegir desde Archivos</b> → <b>Explorar</b> y elígelos.</li>
+          </ol>
+        </div>
+      </details>
     </section>
 
     <!-- 2. Confirmar -->
@@ -67,9 +94,10 @@
         <div id="progress-bar" class="progress-bar"></div>
       </div>
       <p id="progress-detail" class="muted small ellipsis"></p>
+      <p id="progress-speed" class="speed"></p>
       <p class="notice">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg>
-        No cierres esta página ni bloquees el móvil hasta que termine.
+        Deja esta página abierta. Si se bloquea la pantalla o se corta la wifi, al volver seguirá donde se quedó.
       </p>
     </section>
 

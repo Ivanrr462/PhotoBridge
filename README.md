@@ -40,10 +40,12 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 |---|---|
 | **Sin instalar nada en el móvil** | Funciona en el navegador de cualquier Android o iPhone. |
 | **Sin cuentas ni nube** | No hay registro ni servidores intermedios. Las fotos nunca salen de tu red. |
-| **Calidad original** | Los archivos llegan sin comprimir y conservan su fecha original. |
+| **Calidad original** | Los archivos llegan sin comprimir. La fecha real de captura se lee de los metadatos (EXIF, HEIC, MOV/MP4). |
+| **Vídeos grandes sin miedo** | Se envían en trozos de 8 MB. Si se bloquea la pantalla o se corta la wifi, siguen donde se quedaron. |
+| **Rápido con muchas fotos** | Tres archivos a la vez, conexiones persistentes, y velocidad y tiempo restante en pantalla. |
+| **Sin duplicados** | Reconoce lo que ya está en el ordenador y no lo vuelve a copiar. |
 | **Un solo `.exe`** | Unos 11 MB, sin instalador y sin necesidad de tener Python. |
 | **Seguro por defecto** | Clave secreta en el QR, solo acepta conexiones de la red local y nunca sobrescribe archivos. |
-| **Pensado para no expertos** | Una ventana, un QR y un botón. Si algo falla, solo se reintentan las fotos que no llegaron. |
 
 ## Capturas
 
@@ -90,9 +92,19 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 | Sigue sin conectar estando en la misma wifi | Windows tiene la red marcada como **Pública**. Cámbiala a **Privada** en *Configuración › Red e Internet*. |
 | Funciona en casa pero no en la oficina o un hotel | Las redes de invitados suelen aislar los dispositivos entre sí. Es una limitación de la red. |
 | La página dice «Enlace no válido» | El enlace es antiguo. Vuelve a escanear el QR de la ventana. |
-| Se cortó el envío | La pantalla del móvil se bloqueó. Pulsa **Reintentar las que fallaron**. |
+| Se cortó el envío | Vuelve a la página: sigue sola donde se quedó. Si un archivo falló varias veces, pulsa **Reintentar las que fallaron**. |
 
 </details>
+
+### iPhone
+
+| | |
+|---|---|
+| **Live Photos** | Desde el navegador, iOS solo entrega la foto fija (el vídeo de la Live Photo no es accesible desde una web). Para conservar el movimiento: en *Fotos*, abre la Live Photo → **Compartir → Guardar como vídeo**, y envía ese vídeo. |
+| **Vídeos en calidad original** | Al elegir vídeos desde la fototeca, iOS puede recomprimirlos. Para enviarlos tal cual: **Compartir → Guardar en Archivos** y, en PhotoBridge, **Elegir desde Archivos**. |
+| **HEIC** | El selector pide también `image/heic` para que iOS pueda entregar el original. Si Safari pone un nombre temporal, PhotoBridge renombra el archivo con la fecha de captura (`IMG_20240714_183000.heic`). |
+
+La web detecta el iPhone y muestra estas instrucciones en la propia página.
 
 ## Cómo funciona
 
@@ -105,16 +117,24 @@ sequenceDiagram
     PC->>PC: QR con http://IP-local:8765/?t=token
     M->>PC: GET /?t=token (al escanear el QR)
     PC-->>M: Página web para elegir fotos
-    loop Cada archivo, de uno en uno
-        M->>PC: POST /api/upload + X-Token, X-File-Name, X-Last-Modified
-        PC->>PC: Escritura por bloques en .part y renombrado atómico
-        PC-->>M: 200 { savedAs }
+    loop Cada archivo (3 a la vez)
+        M->>PC: POST /api/uploads { id, name, size }
+        PC-->>M: { offset } (o { done, skipped } si ya lo tiene)
+        loop Trozos de 8 MB
+            M->>PC: PUT /api/uploads/{id}?offset=N
+            PC->>PC: Añade el trozo a .{id}.photobridge-part
+            PC-->>M: { offset }
+        end
+        PC->>PC: Fecha de captura (EXIF/HEIC/MOV) y renombrado final
+        PC-->>M: { done, savedAs }
     end
 ```
 
 - **Sin servidor externo.** El PC sirve tanto la web como la API. El móvil solo necesita un navegador.
-- **Subida sin multipart.** El cuerpo de la petición es el archivo tal cual y los metadatos van en cabeceras. Así el servidor escribe directamente al disco en bloques de 1 MB, sin cargar el archivo en memoria.
-- **Escritura segura.** Cada archivo se escribe primero en un temporal y luego se renombra a su nombre final. Si la conexión se corta, el temporal se borra y no quedan fotos a medias.
+- **Id por contenido.** El móvil identifica cada archivo con un hash de su tamaño y de tres muestras de 64 KB (principio, medio y final). Con él se retoman los envíos cortados y se reconocen los ya recibidos, aunque el iPhone cambie el nombre o la fecha.
+- **Reanudable.** Si un trozo se corta, el móvil pregunta al PC cuántos bytes tiene y sigue desde ahí. Si la página está en segundo plano (pantalla bloqueada), espera a que vuelva para reintentar.
+- **Sin multipart.** El cuerpo de cada trozo son los bytes tal cual: el servidor los escribe al disco en bloques de 1 MB, sin cargar el archivo en memoria.
+- **Escritura segura.** Mientras llega, el archivo vive en un temporal oculto. Solo al completarse se renombra a su nombre final, así que nunca quedan fotos a medias. Los temporales abandonados se borran a los 3 días.
 
 ### API local
 
@@ -123,7 +143,8 @@ sequenceDiagram
 | `GET` | `/?t=<token>` | token en la URL | Página para el móvil (o «Enlace no válido» si el token no es correcto). |
 | `GET` | `/static/<archivo>` | — | Recursos de la página (JS, CSS, iconos). Lista cerrada de archivos. |
 | `GET` | `/api/info` | `X-Token` | Nombre del equipo y versión. |
-| `POST` | `/api/upload` | `X-Token` | Sube un archivo. Cabeceras: `X-File-Name` (URL-encoded) y `X-Last-Modified` (ms). |
+| `POST` | `/api/uploads` | `X-Token` | Abre o retoma un envío. Cuerpo JSON `{id, name, size, lastModified}`. Responde `{offset, done, skipped?, savedAs?}`. |
+| `PUT` | `/api/uploads/<id>?offset=N` | `X-Token` | Añade un trozo en la posición `N`. Responde `{offset, done, savedAs?}`, o `409 {offset}` si `N` no coincide. |
 
 ## Seguridad y privacidad
 
@@ -132,6 +153,7 @@ sequenceDiagram
 - **Nombres saneados:** se eliminan rutas (`../`), caracteres prohibidos en Windows y nombres reservados (`CON`, `NUL`, `COM1`…).
 - **Sin sobrescribir:** si el nombre ya existe, se guarda como `foto (1).jpg`.
 - **Espacio en disco:** se rechaza una subida si dejaría menos de 200 MB libres.
+- **Índice local de recibidos:** para no duplicar, se guarda en `%APPDATA%\PhotoBridge\sent.json` qué id corresponde a qué archivo. Si borras el archivo, se puede volver a enviar.
 - **Nada sale de casa:** no hay telemetría, ni cuentas, ni servicios de terceros.
 
 ## Estructura del proyecto
@@ -143,7 +165,8 @@ PhotoBridge/
 │   │   ├── app.py              Punto de entrada: ventana o modo consola (--no-gui)
 │   │   ├── gui.py              Ventana Tkinter: QR, contador y carpeta destino
 │   │   ├── server.py           Servidor HTTP: web del móvil y API de subida
-│   │   ├── storage.py          Guardado seguro de archivos
+│   │   ├── storage.py          Subidas por trozos, reanudación, duplicados y guardado seguro
+│   │   ├── metadata.py         Fecha de captura desde EXIF, HEIC y MOV/MP4
 │   │   ├── network.py          IP local y filtro de clientes
 │   │   ├── config.py           Token, puerto y carpeta
 │   │   ├── qr.py               Generación del QR

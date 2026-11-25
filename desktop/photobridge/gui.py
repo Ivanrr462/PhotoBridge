@@ -69,6 +69,7 @@ class App:
         self.current_url: str | None = None
         self.received_count = 0
         self.received_bytes = 0
+        self.skipped_count = 0
 
         server.on_event = lambda kind, data: self.events.put((kind, data))
 
@@ -237,6 +238,10 @@ class App:
                     text=f"✔ {self.received_count} {noun} ({_format_size(self.received_bytes)})", fg=OK
                 )
                 self.last_label.config(text=f"Último: {data['path'].name}")
+            elif kind == "skipped":
+                self.skipped_count += 1
+                noun = "ya estaba" if self.skipped_count == 1 else "ya estaban"
+                self.last_label.config(text=f"{self.skipped_count} {noun} en el ordenador (no se duplican)")
             elif kind == "error":
                 self.status_label.config(text=data["message"], fg=ERROR)
         self.root.after(200, self._poll_events)

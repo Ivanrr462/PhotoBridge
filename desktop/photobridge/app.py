@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .config import Config
+from .config import Config, config_dir
 from .network import get_lan_ip
 from .server import PhotoBridgeServer
 from .storage import Storage
@@ -20,7 +20,9 @@ def run_console(config: Config, server: PhotoBridgeServer, storage: Storage) -> 
     def on_event(kind: str, data: dict) -> None:
         if kind == "received":
             print(f"  ✔ {data['path'].name} ({data['size']} bytes)", flush=True)
-        else:
+        elif kind == "skipped":
+            print(f"  = {data['path'].name} (ya estaba, no se duplica)", flush=True)
+        elif kind == "error":
             print(f"  ✖ {data['message']}", flush=True)
 
     server.on_event = on_event
@@ -51,7 +53,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.dest:
         config.dest_dir = args.dest
 
-    storage = Storage(config.dest_dir)
+    storage = Storage(config.dest_dir, index_path=config_dir() / "sent.json")
     server = PhotoBridgeServer(config.port, config.token, storage)
 
     if args.no_gui:
