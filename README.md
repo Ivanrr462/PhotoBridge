@@ -92,7 +92,7 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 | Sigue sin conectar estando en la misma wifi | Windows tiene la red marcada como **Pública**. Cámbiala a **Privada** en *Configuración › Red e Internet*. |
 | Funciona en casa pero no en la oficina o un hotel | Las redes de invitados suelen aislar los dispositivos entre sí. Es una limitación de la red. |
 | La página dice «Enlace no válido» | El enlace es antiguo. Vuelve a escanear el QR de la ventana. |
-| Se cortó el envío | Vuelve a la página: sigue sola donde se quedó. Si un archivo falló varias veces, pulsa **Reintentar las que fallaron**. |
+| Se cortó el envío | Vuelve a la página: sigue sola donde se quedó. Si un archivo falló varias veces, pulsa **Reintentar los que fallaron**. |
 
 </details>
 

@@ -352,7 +352,11 @@
     const sent = okCount - skipped;
     let message = "";
     if (sent > 0) message += `${plural(sent, "archivo enviado", "archivos enviados")} a tu ordenador.`;
-    if (skipped > 0) message += ` ${plural(skipped, "ya estaba", "ya estaban")} en el ordenador, así que no se ha duplicado.`;
+    if (skipped > 0) {
+      message += skipped === 1
+        ? " 1 ya estaba en el ordenador, así que no se ha duplicado."
+        : ` ${skipped} ya estaban en el ordenador, así que no se han duplicado.`;
+    }
     if (fatal?.code === "no_space") message += " El ordenador se ha quedado sin espacio en el disco.";
     else if (fatal?.code === "token") message += " El enlace ya no es válido: vuelve a escanear el QR.";
     else if (hasErrors) message += ` ${plural(failed.length, "no se pudo enviar", "no se pudieron enviar")}.`;

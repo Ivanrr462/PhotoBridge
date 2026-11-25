@@ -240,8 +240,11 @@ class App:
                 self.last_label.config(text=f"Último: {data['path'].name}")
             elif kind == "skipped":
                 self.skipped_count += 1
-                noun = "ya estaba" if self.skipped_count == 1 else "ya estaban"
-                self.last_label.config(text=f"{self.skipped_count} {noun} en el ordenador (no se duplican)")
+                if self.skipped_count == 1:
+                    text = "1 ya estaba en el ordenador (no se duplica)"
+                else:
+                    text = f"{self.skipped_count} ya estaban en el ordenador (no se duplican)"
+                self.last_label.config(text=text)
             elif kind == "error":
                 self.status_label.config(text=data["message"], fg=ERROR)
         self.root.after(200, self._poll_events)
