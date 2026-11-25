@@ -89,7 +89,9 @@ class ServerTest(unittest.TestCase):
             offset = state["offset"]
         self.assertEqual(state["savedAs"], "Cumpleaños 🎂.jpg")
         self.assertEqual((self.dest / state["savedAs"]).read_bytes(), data)
-        self.assertEqual([k for k, _ in self.events], ["received"])
+        # inicio + 2 trozos intermedios avisan del progreso; el último trozo, de la llegada
+        self.assertEqual([k for k, _ in self.events], ["progress", "progress", "progress", "received"])
+        self.assertEqual([d["offset"] for k, d in self.events if k == "progress"], [0, 1_000_000, 2_000_000])
 
     def test_resume_returns_current_offset(self):
         self.start(100)
@@ -114,7 +116,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(state["done"] and state["skipped"])
         self.assertEqual(self.visible_files(), ["IMG_0001.jpg"])
-        self.assertEqual([k for k, _ in self.events], ["received", "skipped"])
+        self.assertEqual([k for k, _ in self.events], ["progress", "received", "skipped"])
 
     def test_wrong_token_is_rejected(self):
         self.assertEqual(self.start(10, token="malo")[0], 401)

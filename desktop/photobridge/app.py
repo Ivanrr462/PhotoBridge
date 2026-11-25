@@ -45,6 +45,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--no-gui", action="store_true", help="modo consola, sin ventana")
     parser.add_argument("--port", type=int, help="puerto a usar (por defecto 8765)")
     parser.add_argument("--dest", help="carpeta donde guardar las fotos")
+    parser.add_argument("--classic", action="store_true", help="usar la ventana clásica (sin Edge)")
     args = parser.parse_args(argv)
 
     config = Config.load()
@@ -58,7 +59,11 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.no_gui:
         run_console(config, server, storage)
-    else:
-        from .gui import run_gui
+        return
 
-        run_gui(config, server, storage)
+    from .desktop_ui import run_desktop
+    from .gui import run_gui
+
+    server.start_in_background()
+    if args.classic or not run_desktop(config, server, storage):
+        run_gui(config, server, storage, start_server=False)

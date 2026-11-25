@@ -470,8 +470,9 @@ class App:
 
     # -- arranque -----------------------------------------------------------------------
 
-    def run(self) -> None:
-        self.server.start_in_background()
+    def run(self, start_server: bool = True) -> None:
+        if start_server:
+            self.server.start_in_background()
         threading.Thread(target=self._thumbnail_worker, name="photobridge-thumbs", daemon=True).start()
         if self.config.check_updates:
             threading.Thread(target=self._check_updates, name="photobridge-updates", daemon=True).start()
@@ -487,5 +488,5 @@ class App:
                 pass
 
 
-def run_gui(config: Config, server: PhotoBridgeServer, storage: Storage) -> None:
-    App(config, server, storage).run()
+def run_gui(config: Config, server: PhotoBridgeServer, storage: Storage, start_server: bool = True) -> None:
+    App(config, server, storage).run(start_server=start_server)

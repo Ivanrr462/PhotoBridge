@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhotoBridge</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/desktop.css">
+</head>
+<body class="is-waiting">
+  <div class="backdrop" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="grid"></i></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="/static/icon.svg" alt="" width="36" height="36">
+      <span class="wordmark">Photo<b>Bridge</b></span>
+      <span class="version" id="version"></span>
+    </div>
+    <div class="top-actions">
+      <span class="device-pill" id="device-pill" hidden><i class="dot"></i><span id="device-name"></span></span>
+      <button class="btn btn-ghost" id="show-qr" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M12 3h.01"/><path d="M16 12h1"/><path d="M12 21v-1"/></svg>
+        Conectar otro móvil
+      </button>
+      <button class="btn btn-ghost" id="choose-folder" type="button" title="Cambiar la carpeta donde se guardan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        <span id="folder-name">Carpeta</span>
+      </button>
+      <button class="btn btn-primary" id="open-folder" type="button">Abrir carpeta</button>
+    </div>
+  </header>
+
+  <div class="update-banner" id="update-banner" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    <span id="update-text"></span>
+    <div class="update-bar" id="update-bar" hidden><span id="update-bar-fill"></span></div>
+    <button class="btn btn-primary btn-sm" id="update-button" type="button">Actualizar</button>
+  </div>
+
+  <main>
+    <!-- Esperando a que se conecte un móvil -->
+    <section class="view view-waiting" id="view-waiting">
+      <div class="waiting-copy">
+        <span class="eyebrow"><i class="pulse-dot"></i>Listo para recibir</span>
+        <h1>Conecta tu <span class="gradient">móvil</span></h1>
+        <p class="lead">Escanea el código con la cámara del móvil y elige las fotos que quieres pasar al ordenador.</p>
+        <ol class="steps">
+          <li><span class="num">1</span><div><b>Abre la cámara</b> del móvil</div></li>
+          <li><span class="num">2</span><div><b>Apunta al código</b> y toca el aviso que aparece</div></li>
+          <li><span class="num">3</span><div><b>Elige tus fotos</b> y pulsa «Enviar»</div></li>
+        </ol>
+        <p class="wifi-hint">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/></svg>
+          El móvil tiene que estar en la misma wifi que este ordenador
+        </p>
+      </div>
+      <div class="qr-card">
+        <div class="qr-frame">
+          <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+          <img class="qr" id="qr" alt="Código QR para conectar el móvil">
+          <div class="no-network" id="no-network" hidden>
+            <b>Sin conexión a la red</b>
+            Conecta este ordenador a la wifi o por cable al router.
+          </div>
+        </div>
+        <p class="qr-caption"><span class="spinner"></span>Esperando a que escanees el código…</p>
+        <p class="phone-url" id="phone-url"></p>
+      </div>
+    </section>
+
+    <!-- Móvil conectado: lo que llega -->
+    <section class="view view-gallery" id="view-gallery">
+      <div class="gallery-head">
+        <div>
+          <h1>Fotos recibidas</h1>
+          <p class="muted" id="summary">Elige fotos en el móvil y aparecerán aquí al instante.</p>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <div class="transfers" id="transfers" hidden>
+        <div class="transfers-head">
+          <span class="transfers-title"><span class="spinner"></span><span id="transfers-title"></span></span>
+          <span class="transfers-meta" id="transfers-meta"></span>
+        </div>
+        <div class="bar"><span id="transfers-bar"></span></div>
+        <ul class="transfers-list" id="transfers-list"></ul>
+      </div>
+
+      <div class="gallery" id="gallery"></div>
+
+      <div class="empty" id="empty">
+        <div class="empty-art" aria-hidden="true">
+          <span class="ea-phone"><svg viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span>
+          <span class="ea-dots"><i></i><i></i><i></i></span>
+          <span class="ea-pc"><svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span>
+        </div>
+        <h2 id="empty-title">¡Móvil conectado!</h2>
+        <p>Elige las fotos en el móvil y pulsa <b>«Enviar al ordenador»</b>. Aparecerán aquí en cuanto lleguen.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span class="status-left"><i class="dot" id="link-dot"></i><span id="link-text">Conectando…</span></span>
+    <span class="status-right" id="folder-path"></span>
+  </footer>
+
+  <!-- QR para conectar otro móvil -->
+  <div class="modal" id="qr-modal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="qr-close" type="button" aria-label="Cerrar">×</button>
+      <h2>Conectar otro móvil</h2>
+      <p class="muted">Escanea este código con la cámara del otro móvil.</p>
+      <div class="qr-frame small"><img class="qr" id="qr-modal-img" alt="Código QR"></div>
+    </div>
+  </div>
+
+  <!-- Actualización -->
+  <div class="modal" id="update-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></div>
+      <h2>Hay una versión nueva</h2>
+      <p class="muted" id="update-modal-text"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="update-later" type="button">Más tarde</button>
+        <button class="btn btn-primary" id="update-now" type="button">Actualizar ahora</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="closing" id="closing" hidden>
+    <div><span class="spinner big"></span><h2>Actualizando PhotoBridge…</h2><p>Se abrirá la nueva versión en un momento.</p></div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="/static/desktop.js"></script>
+</body>
+</html>

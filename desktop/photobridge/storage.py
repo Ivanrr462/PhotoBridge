@@ -113,6 +113,8 @@ class UploadState:
     offset: int
     saved: Path | None = None
     skipped: bool = False
+    name: str = ""
+    size: int = 0
 
     @property
     def done(self) -> bool:
@@ -203,7 +205,7 @@ class Storage:
         with self._lock:
             saved = self._already_sent(upload_id, size)
             if saved:
-                return UploadState(offset=size, saved=saved, skipped=True)
+                return UploadState(offset=size, saved=saved, skipped=True, name=saved.name, size=size)
             upload = self._uploads.get(upload_id)
             if upload is None or upload.size != size:
                 upload = Upload(upload_id, sanitize_filename(raw_name), size, last_modified_ms, self._dest_dir)
@@ -218,7 +220,7 @@ class Storage:
             if size - offset > shutil.disk_usage(upload.dest).free - SPACE_MARGIN:
                 raise NotEnoughSpace()
             upload.part.touch()
-        return UploadState(offset=offset)
+        return UploadState(offset=offset, name=upload.name, size=size)
 
     def append(self, upload_id: str, offset: int, stream: BinaryIO, length: int) -> UploadState:
         """Añade un trozo en la posición indicada. Al completar el archivo lo guarda."""
@@ -244,8 +246,8 @@ class Storage:
                     remaining -= len(chunk)
 
             if offset + length < upload.size:
-                return UploadState(offset=offset + length)
-            return UploadState(offset=upload.size, saved=self._finalize(upload))
+                return UploadState(offset=offset + length, name=upload.name, size=upload.size)
+            return UploadState(offset=upload.size, saved=self._finalize(upload), name=upload.name, size=upload.size)
 
     def _finalize(self, upload: Upload) -> Path:
         timestamp = capture_time(upload.part)

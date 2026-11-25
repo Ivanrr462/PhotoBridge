@@ -44,7 +44,7 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 | **Vídeos grandes sin miedo** | Se envían en trozos de 8 MB. Si se bloquea la pantalla o se corta la wifi, siguen donde se quedaron. |
 | **Rápido con muchas fotos** | Tres archivos a la vez, conexiones persistentes, y velocidad y tiempo restante en pantalla. |
 | **Sin duplicados** | Reconoce lo que ya está en el ordenador y no lo vuelve a copiar. |
-| **Galería en el PC** | La ventana muestra miniaturas de lo que va llegando (generadas por el propio Windows). Un clic abre la foto o el vídeo. |
+| **Galería en el PC** | Al conectar el móvil, el QR deja paso a una galería en directo: progreso de lo que llega, contadores y miniaturas (generadas por el propio Windows). Un clic abre la foto o el vídeo. |
 | **Se actualiza solo** | Al abrirlo, avisa si hay una versión nueva y se actualiza con un clic: descarga, comprueba y se reinicia. |
 | **Un solo `.exe`** | Unos 11 MB, sin instalador y sin necesidad de tener Python. |
 | **Seguro por defecto** | Clave secreta en el QR, solo acepta conexiones de la red local y nunca sobrescribe archivos. |
@@ -60,11 +60,14 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
   </tr>
 </table>
 
-<p align="center">
-  <img src="docs/screenshots/desktop-window.png" alt="Ventana de PhotoBridge en Windows" width="640">
-</p>
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%"><img src="docs/screenshots/desktop-waiting.png" alt="PhotoBridge esperando a que se conecte un móvil"><br><sub><b>Esperando:</b> el QR y los pasos para conectar</sub></td>
+    <td align="center" valign="top" width="50%"><img src="docs/screenshots/desktop-gallery.png" alt="PhotoBridge mostrando las fotos recibidas"><br><sub><b>Móvil conectado:</b> lo que llega, en directo</sub></td>
+  </tr>
+</table>
 
-**La ventana del ordenador:** a la izquierda, el QR para conectar el móvil, que se regenera solo si cambia la red o la IP. A la derecha, la galería con las últimas fotos y vídeos recibidos (un clic los abre), el resumen de lo recibido y la carpeta de destino, que se puede abrir o cambiar.
+**La ventana del ordenador:** mientras no hay ningún móvil conectado, muestra el QR en grande y los pasos para conectar. En cuanto el móvil lo escanea, el QR desaparece y la ventana pasa a la galería: qué móvil está conectado, el progreso de lo que se está recibiendo, cuántas fotos y vídeos han llegado y sus miniaturas (un clic las abre). Para conectar otro móvil, el botón «Conectar otro móvil» vuelve a mostrar el QR.
 
 ## Uso
 
@@ -152,6 +155,7 @@ sequenceDiagram
 - **Espacio en disco:** se rechaza una subida si dejaría menos de 200 MB libres.
 - **Índice local de recibidos:** para no duplicar, se guarda en `%APPDATA%\PhotoBridge\sent.json` qué id corresponde a qué archivo. Si borras el archivo, se puede volver a enviar.
 - **Nada sale de casa:** las fotos solo viajan por la red local. No hay telemetría, ni cuentas, ni servicios de terceros.
+- **La ventana:** es una página que sirve el propio PhotoBridge en `/desktop`, que solo responde a este equipo (`127.0.0.1`) y pide una clave aleatoria distinta en cada arranque. Se muestra con Edge en modo aplicación (`--app`), con un perfil propio en `%LOCALAPPDATA%\PhotoBridge\ventana` y la sincronización y el inicio de sesión automático desactivados. Si Edge no está, se usa una ventana clásica de Tkinter (también con `--classic`).
 - **Actualizaciones:** al arrancar, el programa consulta la última release en `api.github.com` (solo envía `PhotoBridge/<versión>` como User-Agent). Al actualizar, comprueba el tamaño y el SHA-256 del `.exe` descargado antes de sustituir el actual. Se puede desactivar con `"check_updates": false` en `%APPDATA%\PhotoBridge\config.json`. Solo funciona si el repositorio es público.
 
 ## Estructura del proyecto
@@ -161,16 +165,17 @@ PhotoBridge/
 ├── desktop/                    App de escritorio (Python, solo librería estándar + qrcode)
 │   ├── photobridge/
 │   │   ├── app.py              Punto de entrada: ventana o modo consola (--no-gui)
-│   │   ├── gui.py              Ventana Tkinter: QR, contador y carpeta destino
 │   │   ├── server.py           Servidor HTTP: web del móvil y API de subida
 │   │   ├── storage.py          Subidas por trozos, reanudación, duplicados y guardado seguro
 │   │   ├── metadata.py         Fecha de captura desde EXIF, HEIC y MOV/MP4
+│   │   ├── desktop_ui.py       Ventana del PC: página HTML en Edge (modo app) y eventos en directo
+│   │   ├── gui.py              Ventana clásica de Tkinter (respaldo si no hay Edge)
 │   │   ├── thumbs.py           Miniaturas con la API del Explorador de Windows
 │   │   ├── updater.py          Comprobación, descarga e instalación de versiones nuevas
 │   │   ├── network.py          IP local y filtro de clientes
 │   │   ├── config.py           Token, puerto y carpeta
 │   │   ├── qr.py               Generación del QR
-│   │   └── web/                Página del móvil (HTML, CSS y JS sin dependencias)
+│   │   └── web/                Página del móvil y ventana del PC (HTML, CSS y JS sin dependencias)
 │   ├── tests/                  Tests con unittest
 │   └── build.ps1               Tests + PyInstaller → dist/PhotoBridge.exe
 ├── landing/                    Web pública de descarga (Astro)
@@ -194,6 +199,7 @@ python -m venv .venv
 | Tarea | Comando |
 |---|---|
 | Abrir con ventana | `.\.venv\Scripts\python.exe -m photobridge` |
+| Ventana clásica (sin Edge) | `.\.venv\Scripts\python.exe -m photobridge --classic` |
 | Modo consola (QR en la terminal) | `.\.venv\Scripts\python.exe -m photobridge --no-gui` |
 | Otro puerto o carpeta | `... -m photobridge --port 9000 --dest D:\Fotos` |
 | Tests | `.\.venv\Scripts\python.exe -m unittest discover -s tests -t .` |

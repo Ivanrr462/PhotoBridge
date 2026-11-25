@@ -2,14 +2,17 @@
 
 Usa la misma API que el Explorador de archivos (IShellItemImageFactory), así que sirve
 para JPG, PNG, vídeos MP4/MOV y, si Windows tiene la extensión HEIF, también HEIC, sin
-añadir librerías al programa. Devuelve la imagen en formato PPM, que Tkinter muestra
-directamente. En otros sistemas, o si Windows no sabe generar la miniatura, devuelve None.
+añadir librerías al programa. La imagen se puede obtener como PPM (para Tkinter) o como
+PNG (para la ventana HTML). En otros sistemas, o si Windows no sabe generar la miniatura,
+devuelve None.
 """
 
 from __future__ import annotations
 
+import struct
 import sys
 import uuid
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,7 +21,27 @@ from pathlib import Path
 class Thumbnail:
     width: int
     height: int
-    ppm: bytes
+    rgb: bytes
+
+    @property
+    def ppm(self) -> bytes:
+        return b"P6 %d %d 255\n" % (self.width, self.height) + self.rgb
+
+    @property
+    def png(self) -> bytes:
+        return encode_png(self.width, self.height, self.rgb)
+
+
+def encode_png(width: int, height: int, rgb: bytes) -> bytes:
+    """PNG RGB de 8 bits con la librería estándar (zlib)."""
+    stride = width * 3
+    raw = b"".join(b"\x00" + rgb[y * stride : (y + 1) * stride] for y in range(height))
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
 
 
 if sys.platform == "win32":
@@ -140,7 +163,7 @@ if sys.platform == "win32":
         if not pixels:
             return None
         width, height, bgra = pixels
-        return Thumbnail(width, height, _to_ppm(width, height, bgra, background))
+        return Thumbnail(width, height, _to_rgb(width, height, bgra, background))
 
 else:  # pragma: no cover - solo Windows sabe generar estas miniaturas
 
@@ -152,7 +175,11 @@ else:  # pragma: no cover - solo Windows sabe generar estas miniaturas
 
 
 def _to_ppm(width: int, height: int, bgra: bytes, background: tuple[int, int, int]) -> bytes:
-    """BGRA (alfa premultiplicado) -> PPM RGB, fundiendo la transparencia con el fondo."""
+    return Thumbnail(width, height, _to_rgb(width, height, bgra, background)).ppm
+
+
+def _to_rgb(width: int, height: int, bgra: bytes, background: tuple[int, int, int]) -> bytes:
+    """BGRA (alfa premultiplicado) -> RGB, fundiendo la transparencia con el fondo."""
     rgb = bytearray(width * height * 3)
     alpha = bgra[3::4]
     if alpha.count(255) == len(alpha) or alpha.count(0) == len(alpha):
@@ -169,4 +196,4 @@ def _to_ppm(width: int, height: int, bgra: bytes, background: tuple[int, int, in
             rgb[q] = min(255, bgra[p + 2] + br * rest // 255)
             rgb[q + 1] = min(255, bgra[p + 1] + bg * rest // 255)
             rgb[q + 2] = min(255, bgra[p] + bb * rest // 255)
-    return b"P6 %d %d 255\n" % (width, height) + bytes(rgb)
+    return bytes(rgb)

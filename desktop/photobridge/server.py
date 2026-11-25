@@ -41,6 +41,8 @@ STATIC_FILES = {
     "icon.svg": "image/svg+xml",
     "favicon.svg": "image/svg+xml",
     "apple-touch-icon.png": "image/png",
+    "desktop.css": "text/css; charset=utf-8",
+    "desktop.js": "text/javascript; charset=utf-8",
 }
 UPLOAD_PATH = re.compile(r"^/api/uploads/([0-9a-f]{16,64})$")
 MAX_JSON_BODY = 16 * 1024
@@ -66,6 +68,7 @@ class PhotoBridgeServer(ThreadingHTTPServer):
         self.token = token
         self.storage = storage
         self.on_event = on_event or (lambda kind, data: None)
+        self.desktop = None  # DesktopController cuando la ventana es la interfaz HTML
         try:
             super().__init__(("0.0.0.0", port), RequestHandler)
         except OSError:
@@ -154,14 +157,33 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     # -- rutas ------------------------------------------------------------
 
+    def _desktop_route(self, url) -> bool:
+        """Rutas de la ventana del ordenador: solo desde este equipo y con su propia clave."""
+        if not (url.path == "/desktop" or url.path.startswith("/desktop/")):
+            return False
+        desktop = self.server.desktop
+        key = parse_qs(url.query).get("k", [""])[0]
+        loopback = self.client_address[0] in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+        if desktop is None or not loopback or not hmac.compare_digest(key.encode(), desktop.key.encode()):
+            self._discard_body()
+            self._json(403, {"error": "forbidden"})
+            return True
+        desktop.handle(self, url)
+        return True
+
     def do_GET(self) -> None:  # noqa: N802
         if not self._client_allowed():
             return
         url = urlsplit(self.path)
+        if self._desktop_route(url):
+            return
         if url.path == "/":
             token = parse_qs(url.query).get("t", [None])[0]
             if self._token_ok(token):
                 self._send(200, (WEB_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
+                self.server.on_event(
+                    "connected", {"ip": self.client_address[0], "ua": self.headers.get("User-Agent", "")}
+                )
             else:
                 self._send(403, INVALID_LINK_PAGE.encode("utf-8"), "text/html; charset=utf-8")
         elif url.path.startswith("/static/") and url.path[8:] in STATIC_FILES:
@@ -177,6 +199,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         if not self._client_allowed():
+            return
+        if self._desktop_route(urlsplit(self.path)):
             return
         if urlsplit(self.path).path != "/api/uploads":
             self._discard_body()
@@ -207,8 +231,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.server.on_event("error", {"message": f"No se pudo preparar el archivo: {exc}"})
             return
 
+        upload_id = str(body["id"])
         if state.skipped:
-            self.server.on_event("skipped", {"path": state.saved})
+            self.server.on_event("skipped", {"path": state.saved, "id": upload_id})
+        else:
+            self.server.on_event(
+                "progress", {"id": upload_id, "name": state.name, "offset": state.offset, "size": state.size}
+            )
         self._json(200, self._state_payload(state))
 
     def do_PUT(self) -> None:  # noqa: N802
@@ -257,5 +286,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         if state.saved is not None:
-            self.server.on_event("received", {"path": state.saved, "size": state.offset})
+            self.server.on_event("received", {"path": state.saved, "size": state.offset, "id": match.group(1)})
+        else:
+            self.server.on_event(
+                "progress", {"id": match.group(1), "name": state.name, "offset": state.offset, "size": state.size}
+            )
         self._json(200, self._state_payload(state))
