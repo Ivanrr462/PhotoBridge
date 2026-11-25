@@ -64,7 +64,19 @@ npm run dev      # http://localhost:4321
 npm run build    # genera landing/dist (estático, para Netlify, Vercel, GitHub Pages…)
 ```
 
-El enlace de descarga está en `landing/src/config.ts`. Apunta a la última *Release* de GitHub: publica allí `PhotoBridge.exe` y cambia `TU_USUARIO`.
+Los botones de descarga apuntan a `https://github.com/Ivanrr462/PhotoBridge/releases/latest/download/PhotoBridge.exe` (definido en `landing/src/config.ts`). GitHub redirige ese enlace al `.exe` de la última Release, así que el navegador lo descarga directamente, sin abrir la página de GitHub.
+
+## Publicar una versión nueva
+
+1. Sube el número de versión en `desktop/photobridge/__init__.py` y en `landing/src/config.ts` (`APP_VERSION`).
+2. Haz commit, crea la etiqueta y súbela:
+
+   ```powershell
+   git tag v0.1.1
+   git push origin main v0.1.1
+   ```
+
+3. El workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) pasa los tests, compila `PhotoBridge.exe` en Windows y publica la Release con el `.exe` adjunto. El enlace de descarga de la landing apunta solo a la nueva versión.
 
 ## Siguientes pasos
 

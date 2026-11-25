@@ -3,6 +3,10 @@ import Icon from "./Icon.astro";
 
 const faqs = [
   {
+    q: "El navegador dice que el archivo «no se descarga habitualmente»",
+    a: "Chrome y Edge lo avisan con los programas nuevos que aún tienen pocas descargas. Abre el menú de la descarga (los tres puntos) y elige <strong>«Conservar»</strong>.",
+  },
+  {
     q: "Al abrirlo, Windows dice «Windows protegió su PC»",
     a: "Es normal con programas nuevos que todavía no son muy conocidos. Pulsa <strong>«Más información»</strong> y después <strong>«Ejecutar de todas formas»</strong>. Solo pasa la primera vez.",
   },
@@ -50,7 +54,7 @@ const faqs = [
     <div class="faq" data-reveal style="--delay: 100ms">
       {
         faqs.map((item, i) => (
-          <details open={i === 2}>
+          <details open={i === 3}>
             <summary>
               {item.q}
               <span class="toggle">

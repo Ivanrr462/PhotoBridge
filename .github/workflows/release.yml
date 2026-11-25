@@ -1,0 +1,50 @@
+# Al subir una etiqueta vX.Y.Z: pasa los tests, compila PhotoBridge.exe en Windows
+# y publica una Release de GitHub con el .exe adjunto.
+#
+#   git tag v0.1.1
+#   git push origin v0.1.1
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Tests y compilación del .exe
+        shell: pwsh
+        run: ./desktop/build.ps1
+
+      - name: Publicar la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PhotoBridge ${{ github.ref_name }}
+          files: desktop/dist/PhotoBridge.exe
+          fail_on_unmatched_files: true
+          body: |
+            ## Descarga
+
+            👉 **[PhotoBridge.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/PhotoBridge.exe)** · Windows 10 y 11 · no necesita instalación
+
+            ## Cómo se usa
+
+            1. Abre `PhotoBridge.exe` en el ordenador. Aparecerá un código QR.
+            2. Escanéalo con la cámara del móvil (conectado a la **misma wifi**).
+            3. Elige las fotos y pulsa **Enviar**. Llegan a `Imágenes\PhotoBridge`.
+
+            ## La primera vez
+
+            - Si el navegador avisa de que el archivo «no se descarga habitualmente», elige **Conservar**.
+            - Si Windows muestra «Windows protegió su PC», pulsa **Más información → Ejecutar de todas formas**.
+            - Si aparece el Firewall de Windows, marca **Redes privadas** y pulsa **Permitir acceso**.

@@ -1,5 +1,5 @@
 ---
-import { APP_VERSION, DOWNLOAD_URL } from "../config";
+import { APP_VERSION, DOWNLOAD_URL, REPO_URL } from "../config";
 
 const year = new Date().getFullYear();
 ---
@@ -17,12 +17,12 @@ const year = new Date().getFullYear();
       <a href="#como-funciona">Cómo funciona</a>
       <a href="#ventajas">Ventajas</a>
       <a href="#ayuda">Ayuda</a>
-      <a href={DOWNLOAD_URL}>Descargar</a>
+      <a href={DOWNLOAD_URL} download>Descargar</a>
     </nav>
   </div>
   <div class="container legal">
     <span>© {year} PhotoBridge</span>
-    <span>v{APP_VERSION}</span>
+    <a href={`${REPO_URL}/releases`}>v{APP_VERSION} · Código en GitHub</a>
   </div>
 </footer>
 

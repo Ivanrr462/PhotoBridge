@@ -14,6 +14,7 @@ if ($LASTEXITCODE -ne 0) { throw "Los tests han fallado; no se genera el ejecuta
     --name PhotoBridge `
     --icon photobridge.ico `
     --add-data "photobridge/web;photobridge/web" `
+    --exclude-module PIL `
     run.py
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller ha fallado." }
 
