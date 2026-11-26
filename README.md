@@ -225,6 +225,13 @@ npm run build    # sitio estático en landing/dist
 
 Los botones de descarga apuntan a `releases/latest/download/PhotoBridge.exe` (definido en [`landing/src/config.ts`](landing/src/config.ts)). GitHub redirige ese enlace al `.exe` de la última release, así que el navegador lo descarga directamente.
 
+#### Publicación en Vercel
+
+La landing se despliega en [Vercel](https://vercel.com) importando este repositorio. No hace falta configurar nada: [`vercel.json`](vercel.json) le indica que instale y compile la carpeta `landing` y que publique `landing/dist`. Cada `git push` a `main` vuelve a desplegarla; si el commit no toca la landing, Vercel se salta la compilación.
+
+- **Dominio propio:** añádelo en *Vercel → proyecto → Settings → Domains* y crea en tu proveedor (por ejemplo Nominalia) los registros DNS que te indique Vercel.
+- **URL de la web:** se toma sola del dominio de producción de Vercel. Para fijar otra, define la variable de entorno `SITE_URL` en Vercel (por ejemplo `https://photobridge.es`).
+
 ### Logo
 
 Los originales son [`branding/logo.svg`](branding/logo.svg) y [`branding/logo-small.svg`](branding/logo-small.svg) (este último para tamaños pequeños). Para regenerar todos los PNG y el `.ico` y copiarlos a la app y a la landing:
