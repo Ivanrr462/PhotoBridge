@@ -230,7 +230,7 @@ Los botones de descarga apuntan a `releases/latest/download/PhotoBridge.exe` (de
 La landing se despliega en [Vercel](https://vercel.com) importando este repositorio con **Root Directory: `landing`**. Vercel detecta Astro solo (compila con `astro build` y publica `dist`), y la versión de Node la toma del `engines` de [`landing/package.json`](landing/package.json). Cada `git push` a `main` vuelve a desplegarla.
 
 - **Dominio propio:** añádelo en *Vercel → proyecto → Settings → Domains* y crea en tu proveedor (por ejemplo Nominalia) los registros DNS que te indique Vercel.
-- **URL de la web:** se toma sola del dominio de producción de Vercel. Para fijar otra, define la variable de entorno `SITE_URL` en Vercel (por ejemplo `https://photobridge.es`).
+- **URL de la web:** por defecto es `https://www.photobridge.es` (en [`landing/astro.config.mjs`](landing/astro.config.mjs)). Se usa para la URL canónica y la imagen al compartir. Para cambiarla sin tocar el código, define la variable de entorno `SITE_URL` en Vercel.
 
 ### Logo
 

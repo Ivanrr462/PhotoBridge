@@ -1,9 +1,7 @@
 import { defineConfig } from "astro/config";
 
-// Dirección pública de la web (se usa para las URLs absolutas, como la imagen al compartir).
-// Orden: SITE_URL si se define a mano (p. ej. tu dominio propio) → dominio de producción de
-// Vercel (lo pone Vercel automáticamente al compilar) → valor por defecto.
-const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-const site = process.env.SITE_URL || (vercelDomain ? `https://${vercelDomain}` : "https://photobridge.vercel.app");
+// Dirección pública de la web (se usa para las URLs absolutas: canónica e imagen al compartir).
+// Se puede cambiar sin tocar el código con la variable de entorno SITE_URL.
+const site = process.env.SITE_URL || "https://www.photobridge.es";
 
 export default defineConfig({ site });
