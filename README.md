@@ -227,7 +227,7 @@ Los botones de descarga apuntan a `releases/latest/download/PhotoBridge.exe` (de
 
 #### Publicación en Vercel
 
-La landing se despliega en [Vercel](https://vercel.com) importando este repositorio. No hace falta configurar nada: [`vercel.json`](vercel.json) le indica que instale y compile la carpeta `landing` y que publique `landing/dist`. Cada `git push` a `main` vuelve a desplegarla; si el commit no toca la landing, Vercel se salta la compilación.
+La landing se despliega en [Vercel](https://vercel.com) importando este repositorio. No hace falta configurar nada: [`vercel.json`](vercel.json) le indica que instale y compile la carpeta `landing` y que publique `landing/dist`. Cada `git push` a `main` vuelve a desplegarla.
 
 - **Dominio propio:** añádelo en *Vercel → proyecto → Settings → Domains* y crea en tu proveedor (por ejemplo Nominalia) los registros DNS que te indique Vercel.
 - **URL de la web:** se toma sola del dominio de producción de Vercel. Para fijar otra, define la variable de entorno `SITE_URL` en Vercel (por ejemplo `https://photobridge.es`).
