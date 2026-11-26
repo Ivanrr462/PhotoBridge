@@ -359,15 +359,22 @@ body.is-selecting .tile .badge:not(.skipped) { left: 44px; }
 .icon-btn.danger:hover { background: rgb(240 68 56 / 0.85); }
 .icon-btn svg { width: 20px; height: 20px; }
 
-.viewer-stage { position: relative; display: grid; place-items: center; min-height: 0; padding: 4px 76px; overflow: hidden; }
+/* La foto se centra con posición absoluta: así el alto máximo se respeta siempre y se ve entera */
+.viewer-stage { position: relative; min-height: 0; overflow: hidden; }
 .viewer-stage img, .viewer-stage video {
-  max-width: 100%; max-height: 100%; object-fit: contain;
-  border-radius: 6px; box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7);
+  position: absolute; inset: 8px 84px 8px 84px; margin: auto;
+  width: auto; height: auto;
+  max-width: calc(100% - 168px); max-height: calc(100% - 16px);
+  border-radius: 8px; box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7);
   animation: media-in 0.25s ease both;
 }
+.viewer-stage video { background: #000; }
 .viewer-stage img { cursor: zoom-in; }
-.viewer-stage.zoomed { place-items: start; overflow: auto; cursor: grab; }
-.viewer-stage.zoomed img { max-width: none; max-height: none; cursor: zoom-out; border-radius: 0; }
+.viewer-stage .spinner { inset: 0; margin: auto; }
+.viewer-stage .viewer-fallback { position: absolute; inset: 0; margin: auto; place-content: center; }
+/* Zoom: la foto a su tamaño real y se recorre con la rueda o las barras */
+.viewer-stage.zoomed { overflow: auto; cursor: grab; }
+.viewer-stage.zoomed img { position: static; margin: 0; max-width: none; max-height: none; cursor: zoom-out; border-radius: 0; box-shadow: none; }
 .viewer-stage .spinner { position: absolute; border-color: rgb(255 255 255 / 0.15); border-top-color: #fff; width: 34px; height: 34px; border-width: 3px; }
 .viewer-fallback { display: grid; justify-items: center; gap: 14px; text-align: center; color: rgb(255 255 255 / 0.75); }
 .viewer-fallback svg { width: 54px; height: 54px; color: #8f9bff; }

@@ -90,14 +90,16 @@ const faqs = [
     <div class="faq" data-reveal style="--delay: 100ms">
       {
         faqs.map((item, i) => (
-          <details open={i === 3}>
+          <details open={i === 3} class:list={{ "is-open": i === 3 }}>
             <summary>
-              {item.q}
+              <span class="question">{item.q}</span>
               <span class="toggle">
                 <Icon name="plus" size={18} strokeWidth={2.4} />
               </span>
             </summary>
-            <div class="answer" set:html={item.a} />
+            <div class="answer">
+              <div class="answer-inner" set:html={item.a} />
+            </div>
           </details>
         ))
       }
@@ -134,14 +136,22 @@ const faqs = [
     gap: 12px;
   }
   details {
+    position: relative;
     border-radius: var(--radius);
     background: var(--surface);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.35s ease,
+      box-shadow 0.35s ease,
+      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  details[open] {
-    border-color: rgb(67 83 255 / 0.3);
+  details:hover {
+    border-color: rgb(67 83 255 / 0.22);
+  }
+  details.is-open,
+  :global(html:not(.js)) details[open] {
+    border-color: rgb(67 83 255 / 0.32);
     box-shadow: var(--shadow-md);
   }
   summary {
@@ -154,9 +164,23 @@ const faqs = [
     list-style: none;
     font: 650 1.05rem/1.35 var(--font-display);
     letter-spacing: -0.01em;
+    border-radius: var(--radius);
+    user-select: none;
   }
   summary::-webkit-details-marker {
     display: none;
+  }
+  .question {
+    transition: color 0.3s ease;
+  }
+  details.is-open .question,
+  :global(html:not(.js)) details[open] .question {
+    color: var(--brand-1);
+  }
+  @media (prefers-color-scheme: dark) {
+    details.is-open .question {
+      color: #9aa5ff;
+    }
   }
   .toggle {
     flex: none;
@@ -167,16 +191,35 @@ const faqs = [
     border-radius: 50%;
     background: var(--bg-soft);
     color: var(--brand-1);
-    transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+    transition:
+      transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1),
+      background-color 0.3s ease,
+      color 0.3s ease,
+      box-shadow 0.3s ease;
   }
-  details[open] .toggle {
-    transform: rotate(45deg);
+  summary:hover .toggle {
+    background: rgb(67 83 255 / 0.12);
+  }
+  details.is-open .toggle,
+  :global(html:not(.js)) details[open] .toggle {
+    transform: rotate(135deg);
     background: var(--grad);
     color: #fff;
+    box-shadow: var(--glow);
   }
   .answer {
-    padding: 0 22px 22px;
+    overflow: hidden;
     color: var(--muted);
+  }
+  .answer-inner {
+    padding: 0 22px 22px;
+    transition:
+      opacity 0.35s ease,
+      transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  :global(.js) details:not(.is-open) .answer-inner {
+    opacity: 0;
+    transform: translateY(-8px);
   }
   .answer :global(ul) {
     margin: 10px 0 0;
@@ -200,3 +243,63 @@ const faqs = [
     }
   }
 </style>
+
+<script>
+  // Abre y cierra las respuestas con una animación suave de altura (el <details> nativo no se anima).
+  // Solo hay una abierta a la vez. Sin JavaScript, o con "reducir movimiento", funciona igual pero sin animar.
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+  const items = [...document.querySelectorAll<HTMLDetailsElement>(".faq details")];
+  const running = new WeakMap<HTMLDetailsElement, Animation>();
+
+  function animateHeight(details: HTMLDetailsElement, from: number, to: number, onEnd?: () => void) {
+    const answer = details.querySelector<HTMLElement>(".answer")!;
+    running.get(details)?.cancel();
+    const duration = Math.min(520, 260 + Math.abs(to - from) * 0.6);
+    // fill "forwards": al terminar se queda en la altura final hasta que se cierra de verdad (sin parpadeo)
+    const animation = answer.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+      duration,
+      easing: EASE,
+      fill: "forwards",
+    });
+    running.set(details, animation);
+    animation.onfinish = () => {
+      running.delete(details);
+      onEnd?.();
+      animation.cancel(); // vuelve a la altura natural del contenido
+    };
+  }
+
+  function open(details: HTMLDetailsElement) {
+    const answer = details.querySelector<HTMLElement>(".answer")!;
+    const start = details.open ? answer.offsetHeight : 0;
+    details.open = true;
+    details.classList.add("is-open");
+    if (reduceMotion.matches) return;
+    animateHeight(details, start, answer.scrollHeight);
+  }
+
+  function close(details: HTMLDetailsElement) {
+    const answer = details.querySelector<HTMLElement>(".answer")!;
+    details.classList.remove("is-open");
+    if (reduceMotion.matches) {
+      details.open = false;
+      return;
+    }
+    animateHeight(details, answer.offsetHeight, 0, () => {
+      if (!details.classList.contains("is-open")) details.open = false;
+    });
+  }
+
+  for (const details of items) {
+    details.querySelector("summary")!.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (details.classList.contains("is-open")) {
+        close(details);
+      } else {
+        items.filter((other) => other !== details && other.classList.contains("is-open")).forEach(close);
+        open(details);
+      }
+    });
+  }
+</script>
