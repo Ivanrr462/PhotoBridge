@@ -44,7 +44,10 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 | **Vídeos grandes sin miedo** | Se envían en trozos de 8 MB. Si se bloquea la pantalla o se corta la wifi, siguen donde se quedaron. |
 | **Rápido con muchas fotos** | Tres archivos a la vez, conexiones persistentes, y velocidad y tiempo restante en pantalla. |
 | **Sin duplicados** | Reconoce lo que ya está en el ordenador y no lo vuelve a copiar. |
-| **Galería en el PC** | Al conectar el móvil, el QR deja paso a una galería en directo: progreso de lo que llega, contadores y miniaturas (generadas por el propio Windows). Un clic abre la foto o el vídeo. |
+| **Galería en el PC** | Al conectar el móvil, el QR deja paso a una galería en directo: progreso de lo que llega, contadores y miniaturas (generadas por el propio Windows). |
+| **Visor integrado** | Un clic abre la foto o el vídeo dentro de PhotoBridge, a pantalla completa, con flechas, zoom y tira de miniaturas. Las HEIC se ven gracias a Windows. |
+| **Borrar sin miedo** | Borra una foto o una selección desde la propia ventana. Van a la Papelera de reciclaje, así que se pueden recuperar. |
+| **Subida visual en el móvil** | Cada miniatura muestra su propio progreso y su ✓ al llegar, con el porcentaje total, la velocidad y el tiempo restante. |
 | **Se actualiza solo** | Al abrirlo, avisa si hay una versión nueva y se actualiza con un clic: descarga, comprueba y se reinicia. |
 | **Un solo `.exe`** | Unos 11 MB, sin instalador y sin necesidad de tener Python. |
 | **Seguro por defecto** | Clave secreta en el QR, solo acepta conexiones de la red local y nunca sobrescribe archivos. |
@@ -54,7 +57,7 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
 <table>
   <tr>
     <td align="center" valign="top" width="25%"><img src="docs/screenshots/mobile-pick.png" alt="Elegir fotos"><br><sub><b>1.</b> Elegir fotos</sub></td>
-    <td align="center" valign="top" width="25%"><img src="docs/screenshots/mobile-confirm.png" alt="Vista previa"><br><sub><b>2.</b> Vista previa</sub></td>
+    <td align="center" valign="top" width="25%"><img src="docs/screenshots/mobile-review.png" alt="Revisar la selección"><br><sub><b>2.</b> Revisar</sub></td>
     <td align="center" valign="top" width="25%"><img src="docs/screenshots/mobile-sending.png" alt="Enviando"><br><sub><b>3.</b> Enviando</sub></td>
     <td align="center" valign="top" width="25%"><img src="docs/screenshots/mobile-done.png" alt="Terminado"><br><sub><b>4.</b> ¡Listo!</sub></td>
   </tr>
@@ -67,7 +70,10 @@ Pasar fotos del móvil al ordenador sigue siendo un lío para mucha gente: cable
   </tr>
 </table>
 
-**La ventana del ordenador:** mientras no hay ningún móvil conectado, muestra el QR en grande y los pasos para conectar. En cuanto el móvil lo escanea, el QR desaparece y la ventana pasa a la galería: qué móvil está conectado, el progreso de lo que se está recibiendo, cuántas fotos y vídeos han llegado y sus miniaturas (un clic las abre). Para conectar otro móvil, el botón «Conectar otro móvil» vuelve a mostrar el QR.
+**La ventana del ordenador:** mientras no hay ningún móvil conectado, muestra el QR en grande y los pasos para conectar. En cuanto el móvil lo escanea, el QR desaparece y la ventana pasa a la galería: qué móvil está conectado, el progreso de lo que se está recibiendo, cuántas fotos y vídeos han llegado y sus miniaturas. Para conectar otro móvil, el botón «Conectar otro móvil» vuelve a mostrar el QR.
+
+- **Ver:** un clic en una miniatura la abre en el visor integrado. Se navega con ← y →, con un clic se hace zoom y los vídeos se reproducen ahí mismo. Desde el visor también se puede abrir con otra aplicación o mostrar en la carpeta.
+- **Borrar:** al pasar el ratón por una miniatura aparecen su papelera y su casilla. Con «Seleccionar» (o Ctrl+A) se marcan varias y se borran de una vez. También funciona la tecla Supr en el visor. Siempre se pide confirmación y los archivos van a la **Papelera de reciclaje** de Windows.
 
 ## Uso
 
@@ -171,6 +177,7 @@ PhotoBridge/
 │   │   ├── desktop_ui.py       Ventana del PC: página HTML en Edge (modo app) y eventos en directo
 │   │   ├── gui.py              Ventana clásica de Tkinter (respaldo si no hay Edge)
 │   │   ├── thumbs.py           Miniaturas con la API del Explorador de Windows
+│   │   ├── trash.py            Enviar archivos a la Papelera de reciclaje
 │   │   ├── updater.py          Comprobación, descarga e instalación de versiones nuevas
 │   │   ├── network.py          IP local y filtro de clientes
 │   │   ├── config.py           Token, puerto y carpeta

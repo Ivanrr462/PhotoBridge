@@ -12,8 +12,10 @@ no llega a conectarse, se usa la ventana clásica de Tkinter (gui.py).
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
 import queue
+import re
 import secrets
 import subprocess
 import sys
@@ -30,9 +32,14 @@ from .qr import qr_matrix
 from .server import WEB_DIR, PhotoBridgeServer
 from .storage import Storage
 from .thumbs import init_thread, windows_thumbnail
+from .trash import TrashError, send_to_trash
 
 VIDEO_EXTENSIONS = {".mov", ".mp4", ".m4v", ".3gp", ".avi", ".mkv", ".webm"}
+BROWSER_IMAGES = {".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp", ".avif"}  # Edge las muestra tal cual
 THUMB_SIZE = 360
+PREVIEW_SIZE = 1800  # vista previa para formatos que Edge no abre (HEIC, RAW...): la genera Windows
+FILE_CHUNK = 256 * 1024
+VIDEO_TYPES = {".mov": "video/mp4", ".m4v": "video/mp4"}  # Edge reproduce el MOV de H.264 si se anuncia como MP4
 KEEPALIVE_SECONDS = 2.0
 CLOSE_GRACE_SECONDS = 3.5  # sin ventana conectada durante este tiempo -> cerrar el programa
 CONNECT_TIMEOUT_SECONDS = 25  # si la ventana no aparece, se usa la de Tkinter
@@ -74,6 +81,8 @@ class DesktopController:
         self._subscribers: list[queue.Queue] = []
         self._items: list[dict] = []
         self._paths: dict[int, Path] = {}
+        self._next_id = 1
+        self.trash = send_to_trash  # se puede sustituir en los tests
         self._thumbs: dict[int, bytes | None] = {}
         self._devices: dict[str, str] = {}
         self._active: dict[str, dict] = {}
@@ -161,18 +170,27 @@ class DesktopController:
         with self._lock:
             if path in self._paths.values():
                 return None
-            item_id = len(self._items) + 1
+            item_id = self._next_id
+            self._next_id += 1
             try:
-                size = size if size is not None else path.stat().st_size
+                stat = path.stat()
+                size = size if size is not None else stat.st_size
+                taken = int(stat.st_mtime * 1000)  # PhotoBridge pone aquí la fecha de captura
             except OSError:
-                size = 0
+                size, taken = size or 0, 0
             suffix = path.suffix.lower()
+            if suffix in VIDEO_EXTENSIONS:
+                kind, view = "video", "video"
+            else:
+                kind, view = "photo", "image" if suffix in BROWSER_IMAGES else "preview"
             item = {
                 "id": item_id,
                 "name": path.name,
                 "ext": suffix.lstrip(".").upper(),
                 "size": size,
-                "kind": "video" if suffix in VIDEO_EXTENSIONS else "photo",
+                "kind": kind,
+                "view": view,
+                "taken": taken,
                 "skipped": skipped,
             }
             self._items.append(item)
@@ -234,6 +252,42 @@ class DesktopController:
 
         threading.Thread(target=work, name="photobridge-update", daemon=True).start()
 
+    def path_of(self, item_id: int) -> Path | None:
+        with self._lock:
+            return self._paths.get(item_id)
+
+    def delete(self, ids: list[int]) -> tuple[list[int], str | None]:
+        """Manda a la Papelera los archivos indicados y los quita de la galería."""
+        with self._lock:
+            targets = {i: self._paths[i] for i in ids if i in self._paths}
+        if not targets:
+            return [], None
+        error = None
+        try:
+            self.trash(list(targets.values()))
+        except (TrashError, OSError) as exc:
+            error = str(exc)
+        removed = [i for i, path in targets.items() if not path.exists()]
+        with self._lock:
+            for i in removed:
+                self._paths.pop(i, None)
+                self._thumbs.pop(i, None)
+            self._items = [item for item in self._items if item["id"] not in removed]
+        if removed:
+            self.publish("removed", {"ids": removed})
+        return removed, error
+
+    def preview(self, item_id: int) -> bytes | None:
+        path = self.path_of(item_id)
+        if path is None:
+            return None
+        init_thread()
+        try:
+            thumb = windows_thumbnail(path, PREVIEW_SIZE)
+        except Exception:  # noqa: BLE001
+            return None
+        return thumb.png if thumb else None
+
     def thumbnail(self, item_id: int) -> bytes | None:
         with self._lock:
             if item_id in self._thumbs:
@@ -276,6 +330,18 @@ class DesktopController:
                 handler._send(200, png, "image/png")
             else:
                 handler._json(404, {"error": "no_thumbnail"})
+        elif method in ("GET", "HEAD") and path.startswith("/desktop/file/"):
+            target = self.path_of(_int(path.rsplit("/", 1)[1]))
+            if target and target.is_file():
+                _serve_file(handler, target)
+            else:
+                handler._json(404, {"error": "missing"})
+        elif method == "GET" and path.startswith("/desktop/preview/"):
+            png = self.preview(_int(path.rsplit("/", 1)[1]))
+            if png:
+                handler._send(200, png, "image/png")
+            else:
+                handler._json(404, {"error": "no_preview"})
         elif method == "POST" and path == "/desktop/action":
             self._action(handler)
         else:
@@ -290,11 +356,22 @@ class DesktopController:
         action = body.get("action")
         if action == "open":
             with self._lock:
-                target = self._paths.get(int(body.get("id", 0) or 0))
+                target = self._paths.get(_int(body.get("id")))
             if not target or not target.exists():
                 handler._json(404, {"error": "missing"})
                 return
             _open_path(target)
+        elif action == "delete":
+            ids = [_int(i) for i in body.get("ids", []) if _int(i) > 0][:5000]
+            removed, error = self.delete(ids)
+            handler._json(200 if not error else 500, {"removed": removed, "error": error})
+            return
+        elif action == "reveal":
+            target = self.path_of(_int(body.get("id")))
+            if not target or not target.exists():
+                handler._json(404, {"error": "missing"})
+                return
+            _reveal(target)
         elif action == "open_folder":
             _open_path(self.storage.dest_dir)
         elif action == "choose_folder":
@@ -348,6 +425,68 @@ class DesktopController:
                 if subscriber in self._subscribers:
                     self._subscribers.remove(subscriber)
             self.last_seen = time.monotonic()
+
+
+def _int(value) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+_RANGE = re.compile(r"^bytes=(\d*)-(\d*)$")
+
+
+def _serve_file(handler, path: Path) -> None:
+    """Envía un archivo con soporte de rangos (Range), necesario para avanzar en los vídeos."""
+    size = path.stat().st_size
+    suffix = path.suffix.lower()
+    content_type = VIDEO_TYPES.get(suffix) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    start, end, status = 0, size - 1, 200
+    match = _RANGE.match(handler.headers.get("Range", "").strip())
+    if match and (match.group(1) or match.group(2)):
+        if match.group(1):
+            start = int(match.group(1))
+            end = min(int(match.group(2)), size - 1) if match.group(2) else size - 1
+        else:
+            start = max(0, size - int(match.group(2)))
+        if start > end or start >= size:
+            handler.send_response(416)
+            handler.send_header("Content-Range", f"bytes */{size}")
+            handler.send_header("Content-Length", "0")
+            handler.end_headers()
+            return
+        status = 206
+    handler.send_response(status)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(end - start + 1))
+    handler.send_header("Accept-Ranges", "bytes")
+    handler.send_header("Cache-Control", "no-store")
+    if status == 206:
+        handler.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+    handler.end_headers()
+    if handler.command == "HEAD":
+        return
+    try:
+        with open(path, "rb") as f:
+            f.seek(start)
+            remaining = end - start + 1
+            while remaining > 0:
+                chunk = f.read(min(FILE_CHUNK, remaining))
+                if not chunk:
+                    break
+                handler.wfile.write(chunk)
+                remaining -= len(chunk)
+    except (ConnectionError, TimeoutError):
+        handler.close_connection = True  # el visor pidió otro trozo y cerró este
+
+
+def _reveal(path: Path) -> None:
+    """Abre el Explorador con el archivo seleccionado."""
+    if sys.platform == "win32":
+        subprocess.Popen(["explorer", "/select,", str(path)])
+    else:
+        _open_path(path.parent)
 
 
 def _open_path(path: Path) -> None:

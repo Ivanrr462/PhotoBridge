@@ -16,6 +16,7 @@ import hmac
 import json
 import re
 import socket
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -78,6 +79,12 @@ class PhotoBridgeServer(ThreadingHTTPServer):
     @property
     def port(self) -> int:
         return self.server_address[1]
+
+    def handle_error(self, request, client_address) -> None:
+        # Los navegadores cierran conexiones preparadas o a medias: no es un error de verdad
+        if isinstance(sys.exc_info()[1], (ConnectionError, TimeoutError)):
+            return
+        super().handle_error(request, client_address)
 
     def start_in_background(self) -> threading.Thread:
         thread = threading.Thread(target=self.serve_forever, name="photobridge-http", daemon=True)

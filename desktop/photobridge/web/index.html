@@ -4,40 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#4353ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PhotoBridge">
   <title>PhotoBridge</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
-  <div class="backdrop" aria-hidden="true"></div>
+<body data-step="pick">
+  <div class="backdrop" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i></div>
 
   <header class="topbar">
     <div class="brand">
-      <img src="/static/icon.svg" alt="" width="36" height="36">
+      <img src="/static/icon.svg" alt="" width="34" height="34">
       <span>Photo<b>Bridge</b></span>
     </div>
     <p id="computer" class="status">Conectando…</p>
   </header>
 
-  <main class="card">
+  <main>
     <!-- 1. Elegir -->
-    <section id="step-pick">
-      <div class="hero-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+    <section class="step step-pick" id="step-pick">
+      <div class="hero-art" aria-hidden="true">
+        <div class="card c1"><i></i></div>
+        <div class="card c2"><i></i></div>
+        <div class="card c3"><i></i></div>
+        <div class="laptop">
+          <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+        </div>
       </div>
-      <h1>Pasa tus fotos al ordenador</h1>
-      <p class="lead">Elige las fotos y vídeos que quieras. Puedes seleccionar muchos a la vez.</p>
-      <label class="btn btn-primary btn-big">
-        <input id="file-input" type="file" accept="image/*,video/*,image/heic,image/heif" multiple hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        Elegir fotos
-      </label>
-      <label class="btn btn-ghost">
-        <input id="file-input-files" type="file" multiple hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-        Elegir desde Archivos
-      </label>
+      <h1>Pasa tus fotos al <span class="gradient">ordenador</span></h1>
+      <p class="lead">Elige las fotos y vídeos que quieras. Llegan en su calidad original, directos por tu wifi.</p>
 
       <details id="ios-tips" class="tips" hidden>
         <summary>
@@ -62,63 +59,90 @@
       </details>
     </section>
 
-    <!-- 2. Confirmar -->
-    <section id="step-confirm" hidden>
-      <div id="preview" class="preview"></div>
-      <h2 id="selected-count"></h2>
-      <p id="selected-size" class="muted"></p>
-      <button id="send-button" class="btn btn-primary btn-big" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        Enviar al ordenador
-      </button>
-      <button id="repick-button" class="btn btn-ghost" type="button">Elegir otras</button>
-    </section>
+    <!-- 2, 3 y 4. Revisar, enviando y terminado comparten la cuadrícula -->
+    <section class="step step-grid" id="step-grid" hidden>
+      <div class="summary" id="summary">
+        <!-- Revisar -->
+        <div class="summary-review">
+          <div>
+            <h2 id="review-title"></h2>
+            <p class="muted" id="review-size"></p>
+          </div>
+          <button class="chip" id="add-more" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Añadir
+          </button>
+        </div>
 
-    <!-- 3. Enviando -->
-    <section id="step-sending" hidden>
-      <div class="ring" aria-hidden="true">
-        <svg viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#4353ff"/>
-              <stop offset="1" stop-color="#19c3fb"/>
-            </linearGradient>
-          </defs>
-          <circle class="ring-track" cx="60" cy="60" r="52"/>
-          <circle id="ring-value" class="ring-value" cx="60" cy="60" r="52"/>
-        </svg>
-        <span id="progress-percent">0 %</span>
-      </div>
-      <h2>Enviando <span id="progress-count"></span></h2>
-      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-        <div id="progress-bar" class="progress-bar"></div>
-      </div>
-      <p id="progress-detail" class="muted small ellipsis"></p>
-      <p id="progress-speed" class="speed"></p>
-      <p class="notice">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg>
-        Deja esta página abierta. Si se bloquea la pantalla o se corta la wifi, al volver seguirá donde se quedó.
-      </p>
-    </section>
+        <!-- Enviando -->
+        <div class="summary-sending">
+          <div class="big-percent"><span id="progress-percent">0</span><small>%</small></div>
+          <div class="sending-info">
+            <h2>Enviando <span id="progress-count"></span></h2>
+            <p class="speed" id="progress-speed">Preparando…</p>
+          </div>
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="progress-bar" class="progress-bar"></div></div>
+          <p class="reconnecting" id="progress-detail" hidden></p>
+        </div>
 
-    <!-- 4. Terminado -->
-    <section id="step-done" hidden>
-      <div id="done-icon" class="done-icon">
-        <svg class="icon-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        <svg class="icon-error" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+        <!-- Terminado -->
+        <div class="summary-done">
+          <div class="done-badge" id="done-icon">
+            <svg class="icon-ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="icon-error" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+          </div>
+          <h2 id="done-title">¡Listo!</h2>
+          <p class="muted" id="done-message"></p>
+          <div class="done-stats" id="done-stats"></div>
+        </div>
       </div>
-      <h2 id="done-title">¡Listo!</h2>
-      <p id="done-message" class="muted"></p>
-      <ul id="failed-list" class="failed" hidden></ul>
-      <button id="retry-button" class="btn btn-primary" type="button" hidden>Reintentar los que fallaron</button>
-      <button id="more-button" class="btn btn-ghost" type="button">Enviar más fotos</button>
+
+      <div class="grid" id="grid"></div>
     </section>
   </main>
 
-  <p class="footnote">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    Tus fotos van directas a tu ordenador por tu wifi
-  </p>
+  <!-- Barra de acciones fija abajo -->
+  <footer class="actionbar">
+    <div class="actions actions-pick">
+      <label class="btn btn-primary btn-big">
+        <input id="file-input" type="file" accept="image/*,video/*,image/heic,image/heif" multiple hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+        Elegir fotos
+      </label>
+      <label class="btn btn-ghost">
+        <input id="file-input-files" type="file" multiple hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        Elegir desde Archivos
+      </label>
+    </div>
+
+    <div class="actions actions-review">
+      <button class="btn btn-ghost btn-icon" id="repick-button" type="button" aria-label="Empezar de nuevo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <button id="send-button" class="btn btn-primary btn-big" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        <span id="send-label">Enviar al ordenador</span>
+      </button>
+    </div>
+
+    <div class="actions actions-sending">
+      <p class="notice">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg>
+        Deja esta página abierta. Si se bloquea la pantalla o se corta la wifi, seguirá donde se quedó.
+      </p>
+    </div>
+
+    <div class="actions actions-done">
+      <button id="retry-button" class="btn btn-ghost" type="button" hidden>Reintentar los que fallaron</button>
+      <button id="more-button" class="btn btn-primary btn-big" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Enviar más fotos
+      </button>
+    </div>
+  </footer>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
   <script src="/static/app.js"></script>
 </body>
 </html>
